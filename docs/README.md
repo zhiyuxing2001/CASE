@@ -12,7 +12,7 @@
 | 2 | [`requirements-analysis.md`](./requirements-analysis.md) | **需求分析报告**（DB-01）：基于 2 份真实病案的解析，归纳数据库基本特点与基本要求 | 阶段一执行者 |
 | 3 | [`phase-1-database-design.md`](./phase-1-database-design.md) | **阶段一 · 数据库设计**：设计原则、ER 模型、34 张表 DDL、中文检索方案、字典计划 | 阶段一执行者 |
 | 4 | [`phase-2-software-development.md`](./phase-2-software-development.md) | **阶段二 · 软件开发**：系统架构、模块设计、OCR 双通道流水线、离线降级、测试策略 | 阶段二执行者 |
-| 5 | [`task-breakdown.md`](./task-breakdown.md) | 两阶段可勾选任务清单（75 项 / 54.2 人日），含依赖、门禁与验收点 | 执行与进度跟踪 |
+| 5 | [`task-breakdown.md`](./task-breakdown.md) | 两阶段可勾选任务清单（76 项 / 55.2 人日），含依赖、门禁与验收点 | 执行与进度跟踪 |
 | 6 | [`technical-validation.md`](./technical-validation.md) | 立项阶段技术假设的验证过程与实测结论（含两个已验证的坑） | 想了解技术风险依据 |
 | 7 | [`commit-convention.md`](./commit-convention.md) | Git 命名与提交规范（英文文件名 + 英文 Conventional Commits） | 提交代码前必读 |
 
@@ -31,12 +31,12 @@ PREP 前置准备（3.0 pd）
         │
         │  ★ 阶段门禁：DDL 可执行、迁移可回滚、检索路由经回归测试
         ▼
-阶段二 · 软件开发（40.0 pd / 57 项任务）
+阶段二 · 软件开发（41.0 pd / 58 项任务）
   B1 脚手架 → B2 病案界面 → B3 OCR → B4 学习模块 → B5 AI 辅助 → B6 导出交付
   交付：可在本机日常使用的完整应用
 ```
 
-**总计 75 项任务 / 54.2 人日**（专注人日；业余投入请 ×2–3 换算自然时间）
+**总计 76 项任务 / 55.2 人日**（专注人日；业余投入请 ×2–3 换算自然时间）
 
 ---
 
