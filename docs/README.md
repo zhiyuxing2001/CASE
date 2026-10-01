@@ -10,11 +10,13 @@
 |---|---|---|---|
 | 1 | [`project-plan.md`](./project-plan.md) | **总纲**：项目定位、两阶段划分、范围界定、技术选型、里程碑、风险、验收标准 | 所有人，先读这个 |
 | 2 | [`requirements-analysis.md`](./requirements-analysis.md) | **需求分析报告**（DB-01）：基于 2 份真实病案的解析，归纳数据库基本特点与基本要求 | 阶段一执行者 |
-| 3 | [`phase-1-database-design.md`](./phase-1-database-design.md) | **阶段一 · 数据库设计**：设计原则、ER 模型、34 张表 DDL、中文检索方案、字典计划 | 阶段一执行者 |
-| 4 | [`phase-2-software-development.md`](./phase-2-software-development.md) | **阶段二 · 软件开发**：系统架构、模块设计、OCR 双通道流水线、离线降级、测试策略 | 阶段二执行者 |
-| 5 | [`task-breakdown.md`](./task-breakdown.md) | 两阶段可勾选任务清单（76 项 / 55.2 人日），含依赖、门禁与验收点 | 执行与进度跟踪 |
-| 6 | [`technical-validation.md`](./technical-validation.md) | 立项阶段技术假设的验证过程与实测结论（含两个已验证的坑） | 想了解技术风险依据 |
-| 7 | [`commit-convention.md`](./commit-convention.md) | Git 命名与提交规范（英文文件名 + 英文 Conventional Commits） | 提交代码前必读 |
+| 3 | [`database-design.md`](./database-design.md) | **数据库设计说明**（DB-02/DB-04）：28 表总体结构、与睡眠专病库的对照、关键决策 K1~K5 | 阶段一执行者 |
+| 4 | [`case-database-spec.xlsx`](./case-database-spec.xlsx) | **字段级结构说明书**：28 张表 / 342 字段 / 19 组枚举附表（由 `tools/build_db_spec.py` 生成） | 实现与评审 |
+| 5 | [`phase-1-database-design.md`](./phase-1-database-design.md) | 阶段一设计说明：§四 **中文全文检索方案（仍然有效）**；§三 DDL 已被取代 | 阶段一执行者 |
+| 6 | [`phase-2-software-development.md`](./phase-2-software-development.md) | **阶段二 · 软件开发**：系统架构、模块设计、OCR 双通道流水线、离线降级、测试策略 | 阶段二执行者 |
+| 7 | [`task-breakdown.md`](./task-breakdown.md) | 两阶段可勾选任务清单（76 项 / 55.2 人日），含依赖、门禁与验收点 | 执行与进度跟踪 |
+| 8 | [`technical-validation.md`](./technical-validation.md) | 立项阶段技术假设的验证过程与实测结论（含两个已验证的坑） | 想了解技术风险依据 |
+| 9 | [`commit-convention.md`](./commit-convention.md) | Git 命名与提交规范（英文文件名 + 英文 Conventional Commits） | 提交代码前必读 |
 
 ---
 
@@ -52,6 +54,9 @@ PREP 前置准备（3.0 pd）
 | **HIS 医嘱表存在确定性算术不变量**（总量 = 单剂剂量 × 剂数，实测 14/14 成立），可做不依赖模型的自动校验 | [`requirements-analysis.md`](./requirements-analysis.md) §6.6 |
 | 表格类单据的**行列对应关系会被 Vision 完全丢失**，必须做表格结构重建 | [`requirements-analysis.md`](./requirements-analysis.md) §6.4 |
 | 就诊卡号内嵌身份证号，**必须脱敏或不存** | [`requirements-analysis.md`](./requirements-analysis.md) §4.3 |
+| 数据库最终为 **28 张表**：睡眠专病库范式（JSON 宽表 + TINYINT 枚举）＋ CASE 特化的字典/师承/溯源三类表 | [`database-design.md`](./database-design.md) |
+| **`father_id` 单字段实现病程链**（初诊自指、复诊指向初诊），取代原双字段方案 | [`database-design.md`](./database-design.md) K1 |
+| 处方药味与诊断**拆为关系表**（睡眠库存 JSON），以支持药物频次统计与字典归一 | [`database-design.md`](./database-design.md) §3.3 |
 | 双通道 OCR 优于单通道：Vision 给确定性字符与坐标，模型在其约束下纠错结构化 | [`phase-2-software-development.md`](./phase-2-software-development.md) §3.3.2 |
 | 数据库设计独立成阶段的原因：数据结构定型后修改成本极高 | [`project-plan.md`](./project-plan.md) §2.2 |
 | **最大风险是手写体识别率**，故阶段二 B3 第一件事是跑评测基线 | [`phase-2-software-development.md`](./phase-2-software-development.md) §5.1 |

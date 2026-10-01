@@ -38,9 +38,9 @@
 | 编号 | 任务 | 产出 / 完成标准 | pd | 依赖 | 状态 |
 |---|---|---|---|---|---|
 | DB-01 | 需求分析与实体识别 | 对照《中医病历书写基本规范》确认必填项与字段清单 | 1.0 | PREP-01 | ✅ 见 [`requirements-analysis.md`](./requirements-analysis.md) |
-| DB-02 | 概念模型定稿 | ER 图与实体关系评审通过 | 0.8 | DB-01 | ☐ |
+| DB-02 | 概念模型定稿 | ER 图与实体关系评审通过 | 0.8 | DB-01 | ✅ 见 [`database-design.md`](./database-design.md) |
 | DB-03 | 标准编码适用性确认 | 明确 ICD-11 TM / GB-T 等标准的适用范围；**结论为"仅预留、不强制"** | 0.5 | DB-01 | ☐ |
-| DB-04 | 逻辑模型定稿 | 34 张表的表结构、字段类型、约束、外键与软删除策略 | 1.5 | DB-02, DB-03 | ☐ |
+| DB-04 | 逻辑模型定稿 | 28 张表的表结构、字段类型、约束、外键与软删除策略 | 1.5 | DB-02, DB-03 | ✅ 见 [`case-database-spec.xlsx`](./case-database-spec.xlsx) |
 | DB-05 | DDL 可执行性验证 | [`tools/verify_ddl.py`](../tools/verify_ddl.py) 自动抽取并执行全部 SQL 块，无报错 | 0.2 | DB-04 | ☐ |
 
 ## DB-B 落地与检索
