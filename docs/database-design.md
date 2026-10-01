@@ -118,12 +118,14 @@ present_illness     diseases           history        history         exam
 | 5 | **增加软删除** | 各主表增设 `is_deleted`，学习资料误删代价高 |
 | 6 | **检查表增加外院机构** | 真实样本的辅助检查含外院机构名（子结构新增 `institution`） |
 
-### 3.4 CASE 新增（17 张表）
+### 3.4 CASE 新增（15 张表）
+
+> 表数勾稽：睡眠库沿用 11 张 + 本节新增 15 张 + §3.3 拆出的 2 张关系表（`diagnosis_item`、`prescription_item`）= **28 张**。
 
 | 分组 | 表 | 为什么睡眠库没有 |
 |---|---|---|
 | 字典（5） | `dict_herb` · `dict_herb_alias` · `dict_syndrome` · `dict_formula` · `dict_term` | 睡眠库是纯录入研究库，无 OCR 与归一需求；CASE 需字典做**药名归一**与**形近字纠错** |
-| 师承（1+3） | `mentor` · `learning_note` · `mentor_comment` · `note_record_link` | CASE 是**跟师学习系统**，教学元数据是核心，睡眠库无此需求 |
+| 师承（4） | `mentor` · `learning_note` · `mentor_comment` · `note_record_link` | CASE 是**跟师学习系统**，教学元数据是核心，睡眠库无此需求 |
 | 溯源（4） | `source_document` · `attachment` · `ocr_job` · `ocr_field_confidence` | CASE 需从扫描件入库，必须回答"这个字段来自哪张图的哪一行" |
 | 系统（2） | `audit_log` · `app_setting` | 学习记录可信性依赖不可抵赖的修改历史 |
 
