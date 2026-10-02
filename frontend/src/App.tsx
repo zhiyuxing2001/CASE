@@ -4,6 +4,7 @@ import { Toaster } from "sonner"
 
 import { AppShell } from "@/components/layout/app-shell"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { Cases } from "@/pages/cases"
 import { Dashboard } from "@/pages/dashboard"
 import { Placeholder } from "@/pages/placeholder"
 
@@ -26,10 +27,7 @@ export default function App() {
             <Route element={<AppShell />}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route
-                path="/cases"
-                element={<Placeholder title="病案检索" />}
-              />
+              <Route path="/cases" element={<Cases />} />
               <Route
                 path="/intake"
                 element={<Placeholder title="导入校对" />}
