@@ -100,6 +100,7 @@ class SyndromeOption(BaseModel):
 
 class TermOption(BaseModel):
     term_id: int
+    term_type: int
     term: str
     description: str
 
@@ -348,4 +349,82 @@ class ProgressOut(BaseModel):
     total_patients: int
     total_syndromes: int
     top_syndromes: list[dict]
+
+
+# ---------------------------------------------------------------------------
+# 字典维护
+# ---------------------------------------------------------------------------
+
+class HerbUpsert(BaseModel):
+    herb_name: str
+    pinyin: str = ""
+    category: str = ""
+    nature: str = ""
+    flavor: str = ""
+    meridians: str = ""
+    functions: str = ""
+    is_processed: bool = False
+    processing: str = ""
+    is_common: bool = True
+
+
+class SyndromeUpsert(BaseModel):
+    syndrome_name: str
+    category: str = ""
+    key_symptoms: str = ""
+    treatment: str = ""
+    common_formula: str = ""
+
+
+class TermUpsert(BaseModel):
+    term: str
+    term_type: int
+    description: str = ""
+
+
+class FormulaUpsert(BaseModel):
+    formula_name: str
+    source: str = ""
+    category: str = ""
+    functions: str = ""
+    indications: str = ""
+    composition_text: str = ""
+    usage_text: str = ""
+
+
+# ---------------------------------------------------------------------------
+# 数据管理
+# ---------------------------------------------------------------------------
+
+class TableStat(BaseModel):
+    table: str
+    rows: int
+
+
+class AdminStats(BaseModel):
+    tables: list[TableStat]
+    database_size: int
+
+
+class BackupInfo(BaseModel):
+    name: str
+    size: int
+    created_at: str
+
+
+class BackupCreated(BaseModel):
+    path: str
+    size: int
+
+
+class AuditPage(BaseModel):
+    total: int
+    items: list[AuditEntry]
+
+
+class CheckResult(BaseModel):
+    ok: bool
+    foreign_key_violations: int
+    tables: list[TableStat]
+    messages: list[str]
 

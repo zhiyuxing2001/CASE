@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
+from ulid import ULID
 
 from .. import schemas
 from ..dictionary import resolve_herb, suggest_herbs
@@ -99,8 +100,8 @@ def list_terms(
         stmt.order_by(DictTerm.usage_count.desc(), DictTerm.term).limit(limit)
     ).scalars().all()
     return [
-        schemas.TermOption(term_id=t.term_id, term=t.term,
-                           description=t.description)
+        schemas.TermOption(term_id=t.term_id, term_type=t.term_type or 0,
+                           term=t.term, description=t.description)
         for t in rows
     ]
 
@@ -121,3 +122,185 @@ def list_formulas(
                               source=f.source)
         for f in rows
     ]
+
+
+# ---------------------------------------------------------------------------
+# 字典维护（增删改，删除为软删除）
+# ---------------------------------------------------------------------------
+
+def _herb_option(h: DictHerb) -> schemas.HerbOption:
+    return schemas.HerbOption(
+        herb_id=h.herb_id, herb_name=h.herb_name, pinyin=h.pinyin,
+        category=h.category, is_processed=bool(h.is_processed),
+    )
+
+
+@router.post("/herbs", response_model=schemas.HerbOption, status_code=201)
+def create_herb(payload: schemas.HerbUpsert,
+                db: Session = Depends(get_db)) -> schemas.HerbOption:
+    herb_id = str(ULID())
+    db.add(DictHerb(herb_id=herb_id, **payload.model_dump()))
+    db.commit()
+    return _herb_option(db.get(DictHerb, herb_id))
+
+
+@router.put("/herbs/{herb_id}", response_model=schemas.HerbOption)
+def update_herb(herb_id: str, payload: schemas.HerbUpsert,
+                db: Session = Depends(get_db)) -> schemas.HerbOption:
+    herb = db.get(DictHerb, herb_id)
+    if herb is None:
+        raise HTTPException(status_code=404, detail="药名不存在")
+    for key, value in payload.model_dump().items():
+        setattr(herb, key, value)
+    db.commit()
+    return _herb_option(herb)
+
+
+@router.delete("/herbs/{herb_id}", status_code=204)
+def delete_herb(herb_id: str, db: Session = Depends(get_db)) -> None:
+    herb = db.get(DictHerb, herb_id)
+    if herb is None:
+        raise HTTPException(status_code=404, detail="药名不存在")
+    herb.is_active = False
+    db.commit()
+
+
+def _syndrome_option(s: DictSyndrome) -> schemas.SyndromeOption:
+    return schemas.SyndromeOption(
+        syndrome_id=s.syndrome_id, syndrome_name=s.syndrome_name,
+        category=s.category,
+    )
+
+
+@router.post("/syndromes", response_model=schemas.SyndromeOption, status_code=201)
+def create_syndrome(payload: schemas.SyndromeUpsert,
+                    db: Session = Depends(get_db)) -> schemas.SyndromeOption:
+    syndrome_id = str(ULID())
+    db.add(DictSyndrome(syndrome_id=syndrome_id, **payload.model_dump()))
+    db.commit()
+    return _syndrome_option(db.get(DictSyndrome, syndrome_id))
+
+
+@router.put("/syndromes/{syndrome_id}", response_model=schemas.SyndromeOption)
+def update_syndrome(syndrome_id: str, payload: schemas.SyndromeUpsert,
+                    db: Session = Depends(get_db)) -> schemas.SyndromeOption:
+    syndrome = db.get(DictSyndrome, syndrome_id)
+    if syndrome is None:
+        raise HTTPException(status_code=404, detail="证型不存在")
+    for key, value in payload.model_dump().items():
+        setattr(syndrome, key, value)
+    db.commit()
+    return _syndrome_option(syndrome)
+
+
+@router.delete("/syndromes/{syndrome_id}", status_code=204)
+def delete_syndrome(syndrome_id: str, db: Session = Depends(get_db)) -> None:
+    syndrome = db.get(DictSyndrome, syndrome_id)
+    if syndrome is None:
+        raise HTTPException(status_code=404, detail="证型不存在")
+    syndrome.is_active = False
+    db.commit()
+
+
+@router.post("/terms", response_model=schemas.TermOption, status_code=201)
+def create_term(payload: schemas.TermUpsert,
+                db: Session = Depends(get_db)) -> schemas.TermOption:
+    term = DictTerm(**payload.model_dump())
+    db.add(term)
+    db.commit()
+    return schemas.TermOption(term_id=term.term_id, term_type=term.term_type or 0,
+                              term=term.term, description=term.description)
+
+
+@router.put("/terms/{term_id}", response_model=schemas.TermOption)
+def update_term(term_id: int, payload: schemas.TermUpsert,
+                db: Session = Depends(get_db)) -> schemas.TermOption:
+    term = db.get(DictTerm, term_id)
+    if term is None:
+        raise HTTPException(status_code=404, detail="术语不存在")
+    for key, value in payload.model_dump().items():
+        setattr(term, key, value)
+    db.commit()
+    return schemas.TermOption(term_id=term.term_id, term_type=term.term_type or 0,
+                              term=term.term, description=term.description)
+
+
+@router.delete("/terms/{term_id}", status_code=204)
+def delete_term(term_id: int, db: Session = Depends(get_db)) -> None:
+    term = db.get(DictTerm, term_id)
+    if term is None:
+        raise HTTPException(status_code=404, detail="术语不存在")
+    term.is_active = False
+    db.commit()
+
+
+@router.post("/formulas", response_model=schemas.FormulaOption, status_code=201)
+def create_formula(payload: schemas.FormulaUpsert,
+                   db: Session = Depends(get_db)) -> schemas.FormulaOption:
+    formula_id = str(ULID())
+    db.add(DictFormula(formula_id=formula_id, **payload.model_dump()))
+    db.commit()
+    formula = db.get(DictFormula, formula_id)
+    return schemas.FormulaOption(formula_id=formula.formula_id,
+                                 formula_name=formula.formula_name,
+                                 source=formula.source)
+
+
+@router.put("/formulas/{formula_id}", response_model=schemas.FormulaOption)
+def update_formula(formula_id: str, payload: schemas.FormulaUpsert,
+                   db: Session = Depends(get_db)) -> schemas.FormulaOption:
+    formula = db.get(DictFormula, formula_id)
+    if formula is None:
+        raise HTTPException(status_code=404, detail="方剂不存在")
+    for key, value in payload.model_dump().items():
+        setattr(formula, key, value)
+    db.commit()
+    return schemas.FormulaOption(formula_id=formula.formula_id,
+                                 formula_name=formula.formula_name,
+                                 source=formula.source)
+
+
+@router.delete("/formulas/{formula_id}", status_code=204)
+def delete_formula(formula_id: str, db: Session = Depends(get_db)) -> None:
+    formula = db.get(DictFormula, formula_id)
+    if formula is None:
+        raise HTTPException(status_code=404, detail="方剂不存在")
+    formula.is_active = False
+    db.commit()
+
+
+# 详情（维护表单编辑回填用），须定义在 /herbs/resolve、/herbs/suggest 之后
+def _dump(obj) -> dict:
+    return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
+
+
+@router.get("/herbs/{herb_id}")
+def get_herb(herb_id: str, db: Session = Depends(get_db)) -> dict:
+    herb = db.get(DictHerb, herb_id)
+    if herb is None:
+        raise HTTPException(status_code=404, detail="药名不存在")
+    return _dump(herb)
+
+
+@router.get("/syndromes/{syndrome_id}")
+def get_syndrome(syndrome_id: str, db: Session = Depends(get_db)) -> dict:
+    syndrome = db.get(DictSyndrome, syndrome_id)
+    if syndrome is None:
+        raise HTTPException(status_code=404, detail="证型不存在")
+    return _dump(syndrome)
+
+
+@router.get("/terms/{term_id}")
+def get_term(term_id: int, db: Session = Depends(get_db)) -> dict:
+    term = db.get(DictTerm, term_id)
+    if term is None:
+        raise HTTPException(status_code=404, detail="术语不存在")
+    return _dump(term)
+
+
+@router.get("/formulas/{formula_id}")
+def get_formula(formula_id: str, db: Session = Depends(get_db)) -> dict:
+    formula = db.get(DictFormula, formula_id)
+    if formula is None:
+        raise HTTPException(status_code=404, detail="方剂不存在")
+    return _dump(formula)
