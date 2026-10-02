@@ -9,6 +9,10 @@ SQLAlchemy>=2.0,<2.2
 alembic>=1.13,<2
 python-ulid>=2,<4
 
+# --- web api ---
+fastapi>=0.111,<1
+uvicorn[standard]>=0.30,<1
+
 # --- configuration ---
 pydantic-settings>=2,<3
 
@@ -17,3 +21,4 @@ openpyxl>=3.1,<4
 
 # --- tests ---
 pytest>=8
+httpx>=0.27,<1
