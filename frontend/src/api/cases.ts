@@ -1,9 +1,10 @@
-import { getJSON } from "@/lib/api"
+import { getJSON, postJSON } from "@/lib/api"
 import type {
   HerbOption,
   HerbResolution,
   HerbSuggestion,
   MentorOption,
+  PatientOption,
   RecordList,
   SyndromeOption,
   TermOption,
@@ -59,4 +60,56 @@ export function suggestHerbs(name: string): Promise<HerbSuggestion[]> {
 
 export function fetchTerms(term_type: number, q = ""): Promise<TermOption[]> {
   return getJSON<TermOption[]>(`/api/dict/terms${qs({ term_type, q })}`)
+}
+
+// ---------------------------------------------------------------------------
+// 写入
+// ---------------------------------------------------------------------------
+
+export interface PatientCreatePayload {
+  patient_name: string
+  gender: boolean
+  birthday: string
+  nationality?: string
+}
+
+export interface HerbPayload {
+  herb_name: string
+  dose?: number | null
+  unit?: string
+  processing?: string
+  decoction_note?: string
+  role?: string
+  sequence: number
+}
+
+export interface RecordCreatePayload {
+  patient_id: string
+  clinic_date: string
+  visit_type?: number
+  age?: number | null
+  mentor_id?: string | null
+  department?: string
+  addr?: string
+  parent_record_id?: number | null
+  narrative: Record<string, string>
+  diagnosis: Record<string, string | null>
+  treatment: Record<string, string | number | null>
+  herbs: HerbPayload[]
+}
+
+export function createPatient(
+  payload: PatientCreatePayload,
+): Promise<{ patient_id: string }> {
+  return postJSON<{ patient_id: string }>("/api/patients", payload)
+}
+
+export function createRecord(
+  payload: RecordCreatePayload,
+): Promise<{ record_id: number }> {
+  return postJSON<{ record_id: number }>("/api/records", payload)
+}
+
+export function fetchPatients(q = ""): Promise<PatientOption[]> {
+  return getJSON<PatientOption[]>(`/api/patients${qs({ q })}`)
 }

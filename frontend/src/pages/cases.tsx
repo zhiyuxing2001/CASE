@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
-import { CalendarDays, ChevronLeft, ChevronRight, Search, X } from "lucide-react"
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Search, X } from "lucide-react"
 import { useMemo, useState } from "react"
+import { Link } from "react-router-dom"
 
 import { fetchMentors, fetchRecords, type RecordQuery } from "@/api/cases"
 import type { MentorOption } from "@/api/types"
@@ -67,6 +68,18 @@ export function Cases() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-4 p-8">
+      {/* 页头 */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          共收录病案，支持按证型、药味、老师与日期组合筛选。
+        </p>
+        <Button asChild>
+          <Link to="/cases/new">
+            <Plus className="h-4 w-4" /> 录入新病案
+          </Link>
+        </Button>
+      </div>
+
       {/* 筛选区 */}
       <Card>
         <CardContent className="space-y-4 p-4">

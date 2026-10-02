@@ -35,6 +35,12 @@ export interface MentorOption {
   title: string
 }
 
+export interface PatientOption {
+  patient_id: string
+  patient_name: string
+  gender: boolean
+}
+
 export interface SyndromeOption {
   syndrome_id: string
   syndrome_name: string
