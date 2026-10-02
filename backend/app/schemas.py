@@ -428,3 +428,50 @@ class CheckResult(BaseModel):
     tables: list[TableStat]
     messages: list[str]
 
+
+# ---------------------------------------------------------------------------
+# AI 助手
+# ---------------------------------------------------------------------------
+
+class AiStatus(BaseModel):
+    configured: bool
+    provider: str
+    model: str
+
+
+class AiChatRequest(BaseModel):
+    question: str
+    case_id: int | None = None
+
+
+class AiSource(BaseModel):
+    record_id: int
+    patient_name: str
+    clinic_date: str
+    complaint: str
+    syndrome: str
+    snippet: str
+
+
+class AiChatResponse(BaseModel):
+    answer: str
+    sources: list[AiSource]
+    degraded: bool
+    ai_configured: bool
+
+
+class AiDraftRequest(BaseModel):
+    topic: str
+    note_type: int = 1
+    case_id: int | None = None
+
+
+class AiPolishRequest(BaseModel):
+    text: str
+
+
+class AiDraftResponse(BaseModel):
+    text: str
+    degraded: bool
+    ai_configured: bool
+
