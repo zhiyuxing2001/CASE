@@ -113,6 +113,43 @@ PREP 前置准备（3.0 pd）
 
 ---
 
+## 数据库构建（阶段一）
+
+阶段一已落地为可执行的代码。数据库为 SQLite，21 张表 + 中文全文检索对象。
+
+```bash
+# 1. 建虚拟环境并安装依赖
+python3 -m venv .venv
+./.venv/bin/pip install -r backend/requirements.txt
+
+# 2. 建库（迁移 + 全文检索对象 + 字典种子数据），位置 data/case.db
+./.venv/bin/python backend/scripts/init_db.py
+
+# 可选参数
+#   --reset    先删除所有表再重建
+#   --no-seed  跳过字典种子数据
+
+# 3. 校验
+cd backend && ../.venv/bin/python -m pytest          # 34 项数据库层测试
+cd .. && ./.venv/bin/python tools/verify_ddl.py      # DDL 可执行性回归
+./.venv/bin/python backend/scripts/check_spec_drift.py   # 说明书与模型一致性
+```
+
+**目录**
+
+| 路径 | 内容 |
+|---|---|
+| `backend/app/models/` | 21 张表的 SQLAlchemy 模型（schema 的权威来源） |
+| `backend/app/search/` | 中文全文检索：聚合表 + FTS5 + 同步触发器 + 按长度路由 |
+| `backend/app/audit.py` | 字段级修改留痕 |
+| `backend/app/seed/` | 字典种子数据与加载器 |
+| `backend/alembic/` | 迁移脚本 |
+| `docs/case-database-spec.xlsx` | 字段级结构说明书（评审用） |
+
+> 说明书与模型由 `check_spec_drift.py` 逐字段比对，**两者不允许漂移**。
+
+---
+
 ## 开发约定
 
 | 约定 | 说明 |
@@ -130,13 +167,12 @@ PREP 前置准备（3.0 pd）
 
 | 工具 | 用途 |
 |---|---|
-| [`tools/verify_ddl.py`](./tools/verify_ddl.py) | 从阶段一文档抽取全部 SQL 并在内存库执行，作为 DDL 回归测试 |
-| [`tools/ocr_smoke_test.sh`](./tools/ocr_smoke_test.sh) | macOS Vision OCR 自举验证脚本（自动建 venv、生成中文测试图并识别） |
-
-```bash
-python3 tools/verify_ddl.py        # 验证 DDL 可执行性
-bash tools/ocr_smoke_test.sh       # 验证 macOS OCR 可用性
-```
+| [`backend/scripts/init_db.py`](./backend/scripts/init_db.py) | 建库：迁移 + 全文检索对象 + 字典种子数据 |
+| [`backend/scripts/check_spec_drift.py`](./backend/scripts/check_spec_drift.py) | 比对结构说明书与 ORM 模型，防止漂移 |
+| [`tools/verify_ddl.py`](./tools/verify_ddl.py) | 从模型渲染 DDL 并在内存库执行，作为 schema 回归 |
+| [`tools/build_db_spec.py`](./tools/build_db_spec.py) | 生成字段级结构说明书 Excel |
+| [`tools/pdf_ocr_extract.py`](./tools/pdf_ocr_extract.py) | 扫描件抽取 + macOS Vision OCR |
+| [`tools/ocr_smoke_test.sh`](./tools/ocr_smoke_test.sh) | macOS Vision OCR 自举验证脚本 |
 
 ---
 
