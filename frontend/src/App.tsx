@@ -9,6 +9,8 @@ import { CaseEntry } from "@/pages/case-entry"
 import { Cases } from "@/pages/cases"
 import { Dashboard } from "@/pages/dashboard"
 import { Intake } from "@/pages/intake"
+import { Learning } from "@/pages/learning"
+import { NoteEditor } from "@/pages/note-editor"
 import { OcrReview } from "@/pages/ocr-review"
 import { Placeholder } from "@/pages/placeholder"
 
@@ -36,10 +38,9 @@ export default function App() {
               <Route path="/cases/:recordId" element={<CaseDetail />} />
               <Route path="/intake" element={<Intake />} />
               <Route path="/intake/:jobId" element={<OcrReview />} />
-              <Route
-                path="/learning"
-                element={<Placeholder title="跟师学习" />}
-              />
+              <Route path="/learning" element={<Learning />} />
+              <Route path="/learning/new" element={<NoteEditor />} />
+              <Route path="/learning/:noteId" element={<NoteEditor />} />
               <Route
                 path="/assistant"
                 element={<Placeholder title="AI 助手" />}

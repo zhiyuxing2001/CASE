@@ -20,3 +20,16 @@ export async function postJSON<T>(path: string, body: unknown): Promise<T> {
   }
   return res.json() as Promise<T>
 }
+
+export async function putJSON<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const detail = await res.text()
+    throw new Error(`请求失败 (${res.status}) ${detail}`)
+  }
+  return res.json() as Promise<T>
+}
