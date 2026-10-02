@@ -71,6 +71,7 @@ export interface HerbSuggestion {
 
 export interface TermOption {
   term_id: number
+  term_type: number
   term: string
   description: string
 }

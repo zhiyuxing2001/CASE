@@ -33,3 +33,11 @@ export async function putJSON<T>(path: string, body: unknown): Promise<T> {
   }
   return res.json() as Promise<T>
 }
+
+export async function delJSON(path: string): Promise<void> {
+  const res = await fetch(path, { method: "DELETE" })
+  if (!res.ok) {
+    const detail = await res.text()
+    throw new Error(`请求失败 (${res.status}) ${detail}`)
+  }
+}

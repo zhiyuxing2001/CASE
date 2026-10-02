@@ -1,6 +1,7 @@
 import { getJSON, postJSON } from "@/lib/api"
 import type {
   AuditEntry,
+  FormulaOption,
   HerbOption,
   HerbResolution,
   HerbSuggestion,
@@ -70,6 +71,10 @@ export function suggestHerbs(name: string): Promise<HerbSuggestion[]> {
 
 export function fetchTerms(term_type: number, q = ""): Promise<TermOption[]> {
   return getJSON<TermOption[]>(`/api/dict/terms${qs({ term_type, q })}`)
+}
+
+export function fetchFormulas(q = ""): Promise<FormulaOption[]> {
+  return getJSON<FormulaOption[]>(`/api/dict/formulas${qs({ q })}`)
 }
 
 // ---------------------------------------------------------------------------
