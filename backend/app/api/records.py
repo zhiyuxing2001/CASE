@@ -13,6 +13,7 @@ from .. import schemas
 from ..models import (CaseNarrative, Diagnosis, InfoPatient, InfoRecord,
                       Mentor, PrescriptionItem, Treatment)
 from ..search import search_cases
+from ..services.record_service import create_record
 from .deps import get_db
 
 router = APIRouter(prefix="/api/records", tags=["records"])
@@ -153,7 +154,9 @@ def get_record(record_id: int, db: Session = Depends(get_db)) -> schemas.RecordD
     if record is None or record.is_deleted:
         raise HTTPException(status_code=404, detail="病案不存在")
 
-    patient = db.get(InfoPatient, record.patient_id)
+    patient = db.scalar(
+        select(InfoPatient).where(InfoPatient.patient_id == record.patient_id)
+    )
     narrative = db.get(CaseNarrative, record_id)
     diagnosis = db.get(Diagnosis, record_id)
     treatment = db.get(Treatment, record_id)
@@ -231,3 +234,12 @@ def get_course(record_id: int, db: Session = Depends(get_db)) -> list[dict[str, 
         }
         for v in visits
     ]
+
+
+@router.post("", response_model=schemas.RecordCreated, status_code=201)
+def create_record_endpoint(
+    payload: schemas.RecordCreate,
+    db: Session = Depends(get_db),
+) -> schemas.RecordCreated:
+    record_id = create_record(db, payload)
+    return schemas.RecordCreated(record_id=record_id)

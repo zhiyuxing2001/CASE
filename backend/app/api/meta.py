@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from ulid import ULID
 
 from .. import schemas
 from ..models import InfoPatient, Mentor
@@ -45,3 +46,25 @@ def list_patients(
                               gender=bool(p.gender))
         for p in rows
     ]
+
+
+@router.post("/patients", response_model=schemas.PatientCreated,
+             status_code=201)
+def create_patient(
+    payload: schemas.PatientCreate,
+    db: Session = Depends(get_db),
+) -> schemas.PatientCreated:
+    patient_id = str(ULID())
+    db.add(InfoPatient(
+        patient_id=patient_id,
+        patient_name=payload.patient_name,
+        gender=payload.gender,
+        birthday=payload.birthday,
+        nationality=payload.nationality,
+        id_no=payload.id_no,
+        job=payload.job,
+        tel=payload.tel,
+        addr_region=payload.addr_region,
+    ))
+    db.commit()
+    return schemas.PatientCreated(patient_id=patient_id)

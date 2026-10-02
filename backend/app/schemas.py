@@ -8,7 +8,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Health(BaseModel):
@@ -127,3 +127,89 @@ class SearchResult(BaseModel):
     patient_id: str
     clinic_date: date | None
     search_text: str
+
+
+# ---------------------------------------------------------------------------
+# 写入请求模型
+# ---------------------------------------------------------------------------
+
+class PatientCreate(BaseModel):
+    patient_name: str
+    gender: bool = False
+    birthday: date
+    nationality: str = "CHN"
+    id_no: str = ""
+    job: str = ""
+    tel: str = ""
+    addr_region: str = ""
+
+
+class PatientCreated(BaseModel):
+    patient_id: str
+
+
+class NarrativeCreate(BaseModel):
+    complaint: str = ""
+    present_illness: str = ""
+    past_history: str = ""
+    personal_history: str = ""
+    allergy_history: str = ""
+    body_of_tongue: str = ""
+    fur_of_tongue: str = ""
+    pulse: str = ""
+    other_cond: str = ""
+    physical_exam: str = ""
+    auxiliary_exam: str = ""
+    notes: str = ""
+
+
+class DiagnosisCreate(BaseModel):
+    tcm_disease: str = ""
+    syndrome: str = ""
+    syndrome_id: str | None = None
+    wm_diagnosis: str = ""
+    patterns_analysis: str = ""
+    differential_diagnosis: str = ""
+    notes: str = ""
+
+
+class TreatmentCreate(BaseModel):
+    treatment_principle: str = ""
+    formula_name: str = ""
+    formula_id: str | None = None
+    dose_count: int | None = None
+    decoction: str = ""
+    usage: str = ""
+    advice: str = ""
+    other_treatment: str = ""
+
+
+class HerbCreate(BaseModel):
+    herb_name: str
+    dose: float | None = None
+    unit: str = "g"
+    processing: str = ""
+    decoction_note: str = ""
+    role: str = ""
+    sequence: int = 0
+
+
+class RecordCreate(BaseModel):
+    patient_id: str
+    clinic_date: date
+    visit_type: int = 0
+    age: float | None = None
+    mentor_id: str | None = None
+    department: str = ""
+    addr: str = ""
+    doctor_name: str = ""
+    parent_record_id: int | None = None
+    narrative: NarrativeCreate = Field(default_factory=NarrativeCreate)
+    diagnosis: DiagnosisCreate = Field(default_factory=DiagnosisCreate)
+    treatment: TreatmentCreate = Field(default_factory=TreatmentCreate)
+    herbs: list[HerbCreate] = Field(default_factory=list)
+
+
+class RecordCreated(BaseModel):
+    record_id: int
+
