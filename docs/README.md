@@ -14,9 +14,10 @@
 | 4 | [`case-database-spec.xlsx`](./case-database-spec.xlsx) | **字段级结构说明书**：21 张表 / 247 字段 / 17 组枚举附表（由 `tools/build_db_spec.py` 生成） | 实现与评审 |
 | 5 | [`phase-1-database-design.md`](./phase-1-database-design.md) | 阶段一设计说明：§四 **中文全文检索方案（仍然有效）**；§三 DDL 已被取代 | 阶段一执行者 |
 | 6 | [`phase-2-software-development.md`](./phase-2-software-development.md) | **阶段二 · 软件开发**：系统架构、模块设计、OCR 双通道流水线、离线降级、测试策略 | 阶段二执行者 |
-| 7 | [`task-breakdown.md`](./task-breakdown.md) | 两阶段可勾选任务清单（76 项 / 55.2 人日），含依赖、门禁与验收点 | 执行与进度跟踪 |
-| 8 | [`technical-validation.md`](./technical-validation.md) | 立项阶段技术假设的验证过程与实测结论（含两个已验证的坑） | 想了解技术风险依据 |
-| 9 | [`commit-convention.md`](./commit-convention.md) | Git 命名与提交规范（英文文件名 + 英文 Conventional Commits） | 提交代码前必读 |
+| 7 | [`llm-integration.md`](./llm-integration.md) | **模型接入层设计**：API 为主、自托管预留接口、任务→能力路由、端点配置形态 | 阶段二 B5 执行者 |
+| 8 | [`task-breakdown.md`](./task-breakdown.md) | 两阶段可勾选任务清单（76 项 / 55.2 人日），含依赖、门禁与验收点 | 执行与进度跟踪 |
+| 9 | [`technical-validation.md`](./technical-validation.md) | 立项阶段技术假设的验证过程与实测结论（含两个已验证的坑） | 想了解技术风险依据 |
+| 10 | [`commit-convention.md`](./commit-convention.md) | Git 命名与提交规范（英文文件名 + 英文 Conventional Commits） | 提交代码前必读 |
 
 ---
 
