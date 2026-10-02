@@ -10,7 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .. import schemas
-from ..models import (CaseNarrative, Diagnosis, InfoPatient, InfoRecord,
+from ..models import (AuditLog, CaseNarrative, Diagnosis, InfoPatient, InfoRecord,
                       Mentor, PrescriptionItem, Treatment)
 from ..search import search_cases
 from ..services.record_service import create_record
@@ -243,3 +243,44 @@ def create_record_endpoint(
 ) -> schemas.RecordCreated:
     record_id = create_record(db, payload)
     return schemas.RecordCreated(record_id=record_id)
+
+
+_AUDITED_TABLES = ("info_record", "case_narrative", "diagnosis", "treatment",
+                   "prescription_item")
+
+
+@router.get("/{record_id}/history", response_model=list[schemas.AuditEntry])
+def get_history(record_id: int, db: Session = Depends(get_db)) -> list[schemas.AuditEntry]:
+    """该病案关联的字段级修改历史。
+
+    prescription_item 的主键是 item_id，需先查出该病案的全部药味主键，
+    再与 record_id 一并作为 record_pk 过滤。
+    """
+    item_ids = [
+        i for i in db.execute(
+            select(PrescriptionItem.item_id).where(
+                PrescriptionItem.record_id == record_id)
+        ).scalars()
+    ]
+    pks = {str(record_id)} | {str(i) for i in item_ids}
+
+    rows = db.execute(
+        select(AuditLog)
+        .where(AuditLog.record_pk.in_(pks),
+               AuditLog.table_name.in_(_AUDITED_TABLES))
+        .order_by(AuditLog.changed_at.desc())
+        .limit(200)
+    ).scalars().all()
+
+    return [
+        schemas.AuditEntry(
+            table_name=row.table_name,
+            action=row.action,
+            field_name=row.field_name,
+            old_value=row.old_value,
+            new_value=row.new_value,
+            changed_at=row.changed_at.isoformat(sep=" "),
+            note=row.note,
+        )
+        for row in rows
+    ]

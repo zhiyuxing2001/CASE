@@ -9,9 +9,10 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.deps import get_db
+from app.audit import enable_audit
 from app.main import app
 from app.models import Mentor
 from app.seed import seed_dictionaries
@@ -22,8 +23,12 @@ def _make_client(engine: Engine) -> TestClient:
         session.add(Mentor(mentor_id="M-API", mentor_name="接口老师"))
         session.commit()
 
+    # 与生产 SessionLocal 对齐：挂审计监听，确保写路径产生字段级留痕
+    factory = sessionmaker(bind=engine, expire_on_commit=False, future=True)
+    enable_audit(factory)
+
     def override_get_db():
-        with Session(engine) as session:
+        with factory() as session:
             yield session
 
     app.dependency_overrides[get_db] = override_get_db
@@ -75,6 +80,11 @@ def test_create_patient_and_full_record(engine: Engine) -> None:
         course = client.get(f"/api/records/{rid}/course").json()
         assert [v["visit_no"] for v in course] == [1, 2]
         assert all(v["record_id"] for v in course)
+
+        # 修改历史：API 写入经审计会话，应产生字段级留痕
+        history = client.get(f"/api/records/{rid}/history").json()
+        assert any(e["table_name"] == "info_record" for e in history)
+        assert any(e["table_name"] == "prescription_item" for e in history)
     finally:
         _cleanup()
 

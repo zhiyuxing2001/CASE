@@ -213,3 +213,13 @@ class RecordCreate(BaseModel):
 class RecordCreated(BaseModel):
     record_id: int
 
+
+class AuditEntry(BaseModel):
+    table_name: str
+    action: int
+    field_name: str
+    old_value: str
+    new_value: str
+    changed_at: str
+    note: str
+
