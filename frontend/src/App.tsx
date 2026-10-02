@@ -5,6 +5,7 @@ import { Toaster } from "sonner"
 import { AppShell } from "@/components/layout/app-shell"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Admin } from "@/pages/admin"
+import { Assistant } from "@/pages/assistant"
 import { CaseDetail } from "@/pages/case-detail"
 import { CaseEntry } from "@/pages/case-entry"
 import { Cases } from "@/pages/cases"
@@ -14,7 +15,6 @@ import { Intake } from "@/pages/intake"
 import { Learning } from "@/pages/learning"
 import { NoteEditor } from "@/pages/note-editor"
 import { OcrReview } from "@/pages/ocr-review"
-import { Placeholder } from "@/pages/placeholder"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,10 +43,7 @@ export default function App() {
               <Route path="/learning" element={<Learning />} />
               <Route path="/learning/new" element={<NoteEditor />} />
               <Route path="/learning/:noteId" element={<NoteEditor />} />
-              <Route
-                path="/assistant"
-                element={<Placeholder title="AI 助手" />}
-              />
+              <Route path="/assistant" element={<Assistant />} />
               <Route path="/dictionary" element={<Dictionary />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
