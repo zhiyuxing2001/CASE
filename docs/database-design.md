@@ -226,13 +226,30 @@
 
 ---
 
-## 七、DDL 落地计划（`DB-04`）
+## 七、落地实现（已完成）
 
-本说明书是字段级规范，尚未生成可执行 DDL。`DB-04` 将：
+本说明书是评审用的字段级规范；**可执行 schema 的权威来源是 ORM 模型**，两者由脚本逐字段比对，不允许漂移。
 
-1. 由 [`tools/build_db_spec.py`](../tools/build_db_spec.py) 的表定义**同时生成** `CREATE TABLE` 语句与 Alembic 迁移，避免说明书与实现脱节
-2. 在新结构上落地 [`phase-1-database-design.md`](./phase-1-database-design.md) §四 的中文全文检索方案（FTS5 `trigram` + 按查询长度路由到 LIKE），检索范围以 `case_narrative` 的文本栏为主
-3. 复核 §八 待确认事项后再定稿
+| 落地项 | 位置 |
+|---|---|
+| 21 张表的 ORM 模型 | `backend/app/models/` |
+| Alembic 迁移（可正向/回滚） | `backend/alembic/versions/` |
+| 中文全文检索（聚合表 + FTS5 + 18 个触发器 + 按长度路由） | `backend/app/search/case_search.py` |
+| 字段级审计留痕 | `backend/app/audit.py` |
+| 字典种子数据与药名归一 | `backend/app/seed/` · `backend/app/dictionary.py` |
+| 建库脚本 | `backend/scripts/init_db.py` |
+| 说明书 ⇄ 模型漂移检查 | `backend/scripts/check_spec_drift.py` |
+
+**建库**：
+
+```bash
+python3 -m venv .venv && ./.venv/bin/pip install -r backend/requirements.txt
+./.venv/bin/python backend/scripts/init_db.py
+```
+
+**验收状态**：全部 DDL 可执行、迁移可正反向、FTS5 触发器同步正确、2 字词检索路由经回归测试、字典种子数据入库可用 —— 阶段门禁五项全部满足。数据库层 **50 项测试通过**，其中包含一次「五诊次病程」的端到端验证。
+
+> 原计划"由说明书生成 DDL"的做法已调整：说明书与模型若各自生成 SQL，会形成两个真相源。现改为**模型为权威、说明书为评审文档**，用漂移检查保证二者一致。
 
 ---
 
