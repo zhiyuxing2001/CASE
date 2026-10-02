@@ -72,8 +72,8 @@ PREP 前置准备（3.0 pd）
 |---|---|
 | [`docs/project-plan.md`](./docs/project-plan.md) | **总纲**：项目定位、两阶段划分、范围界定、技术选型、里程碑、风险、验收标准 |
 | [`docs/requirements-analysis.md`](./docs/requirements-analysis.md) | **需求分析报告**（DB-01）：基于 2 份真实病案的解析，归纳数据库基本特点与基本要求 |
-| [`docs/database-design.md`](./docs/database-design.md) | **数据库设计说明**（DB-02/DB-04）：28 表总体结构、与睡眠专病库的对照、关键决策 K1~K5 |
-| [`docs/case-database-spec.xlsx`](./docs/case-database-spec.xlsx) | **字段级结构说明书**：28 张表 / 342 字段 / 19 组枚举附表 |
+| [`docs/database-design.md`](./docs/database-design.md) | **数据库设计说明**（DB-02/DB-04）：21 表总体结构、与睡眠专病库的对照、关键决策 K1~K6 |
+| [`docs/case-database-spec.xlsx`](./docs/case-database-spec.xlsx) | **字段级结构说明书**：21 张表 / 247 字段 / 17 组枚举附表 |
 | [`docs/phase-1-database-design.md`](./docs/phase-1-database-design.md) | 阶段一设计说明；§四 中文全文检索方案仍有效，§三 DDL 已被取代 |
 | [`docs/phase-2-software-development.md`](./docs/phase-2-software-development.md) | **阶段二 · 软件开发**：系统架构、模块设计、OCR 双通道流水线、离线降级 |
 | [`docs/task-breakdown.md`](./docs/task-breakdown.md) | 两阶段可勾选任务清单（76 项 / 55.2 人日），含依赖与门禁 |
