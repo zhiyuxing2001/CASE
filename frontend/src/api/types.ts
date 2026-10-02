@@ -80,3 +80,43 @@ export interface FormulaOption {
   formula_name: string
   source: string
 }
+
+export interface HerbItem {
+  sequence: number
+  herb_name: string
+  herb_name_norm: string
+  herb_id: string | null
+  dose: number | null
+  unit: string
+  processing: string
+  decoction_note: string
+  role: string
+  needs_review: boolean
+}
+
+export interface CourseVisit {
+  record_id: number
+  clinic_date: string
+  visit_no: number
+  visit_type: number
+}
+
+export interface RecordDetail {
+  record: Record<string, unknown>
+  patient: { patient_id: string; patient_name: string; gender: boolean; age: number | null }
+  narrative: Record<string, string>
+  diagnosis: Record<string, string | null>
+  treatment: Record<string, string | number | null>
+  herbs: HerbItem[]
+  course: CourseVisit[]
+}
+
+export interface AuditEntry {
+  table_name: string
+  action: number
+  field_name: string
+  old_value: string
+  new_value: string
+  changed_at: string
+  note: string
+}

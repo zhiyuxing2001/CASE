@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, Search, X } from "lucide-react"
 import { useMemo, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 import { fetchMentors, fetchRecords, type RecordQuery } from "@/api/cases"
 import type { MentorOption } from "@/api/types"
@@ -32,6 +32,7 @@ const VISIT_TYPE: Record<number, { label: string; variant: "default" | "secondar
 }
 
 export function Cases() {
+  const navigate = useNavigate()
   const [draft, setDraft] = useState<RecordQuery>({ page: 1, page_size: 20 })
   const [query, setQuery] = useState<RecordQuery>({ page: 1, page_size: 20 })
 
@@ -182,7 +183,11 @@ export function Cases() {
                 {data?.items.map((row) => {
                   const visit = VISIT_TYPE[row.visit_type] ?? VISIT_TYPE[0]
                   return (
-                    <TableRow key={row.record_id} className="cursor-pointer">
+                    <TableRow
+                      key={row.record_id}
+                      className="cursor-pointer"
+                      onClick={() => navigate(`/cases/${row.record_id}`)}
+                    >
                       <TableCell className="tabular-nums text-muted-foreground">
                         {row.clinic_date}
                       </TableCell>

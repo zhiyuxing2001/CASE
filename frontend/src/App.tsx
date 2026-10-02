@@ -4,6 +4,7 @@ import { Toaster } from "sonner"
 
 import { AppShell } from "@/components/layout/app-shell"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { CaseDetail } from "@/pages/case-detail"
 import { CaseEntry } from "@/pages/case-entry"
 import { Cases } from "@/pages/cases"
 import { Dashboard } from "@/pages/dashboard"
@@ -30,6 +31,7 @@ export default function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/cases" element={<Cases />} />
               <Route path="/cases/new" element={<CaseEntry />} />
+              <Route path="/cases/:recordId" element={<CaseDetail />} />
               <Route
                 path="/intake"
                 element={<Placeholder title="导入校对" />}

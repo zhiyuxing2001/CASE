@@ -1,10 +1,12 @@
 import { getJSON, postJSON } from "@/lib/api"
 import type {
+  AuditEntry,
   HerbOption,
   HerbResolution,
   HerbSuggestion,
   MentorOption,
   PatientOption,
+  RecordDetail,
   RecordList,
   SyndromeOption,
   TermOption,
@@ -36,6 +38,14 @@ function qs(params: Record<string, string | number | undefined>): string {
 
 export function fetchRecords(query: RecordQuery = {}): Promise<RecordList> {
   return getJSON<RecordList>(`/api/records${qs(query as Record<string, string | number | undefined>)}`)
+}
+
+export function fetchRecord(recordId: number): Promise<RecordDetail> {
+  return getJSON<RecordDetail>(`/api/records/${recordId}`)
+}
+
+export function fetchRecordHistory(recordId: number): Promise<AuditEntry[]> {
+  return getJSON<AuditEntry[]>(`/api/records/${recordId}/history`)
 }
 
 export function fetchMentors(): Promise<MentorOption[]> {
