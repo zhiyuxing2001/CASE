@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* 蓝白主色 */
+    --background: 210 40% 98%;
+    --foreground: 224 32% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 32% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 32% 16%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 214 60% 96%;
+    --secondary-foreground: 224 32% 16%;
+    --muted: 214 40% 95%;
+    --muted-foreground: 217 14% 46%;
+    --accent: 214 70% 94%;
+    --accent-foreground: 224 32% 16%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 30% 90%;
+    --input: 214 30% 88%;
+    --ring: 221 83% 53%;
+
+    /* CASE 语义色 */
+    --success: 152 60% 42%; /* 已校对 */
+    --success-foreground: 0 0% 100%;
+    --warning: 37 92% 50%; /* 低置信 / 待校对 */
+    --warning-foreground: 0 0% 100%;
+    --ai: 258 70% 55%; /* AI 生成内容 */
+    --ai-foreground: 0 0% 100%;
+
+    --radius: 0.6rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  /* 药名 / 剂量等宽，纵向对齐 */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
