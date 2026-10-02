@@ -8,6 +8,8 @@ import { CaseDetail } from "@/pages/case-detail"
 import { CaseEntry } from "@/pages/case-entry"
 import { Cases } from "@/pages/cases"
 import { Dashboard } from "@/pages/dashboard"
+import { Intake } from "@/pages/intake"
+import { OcrReview } from "@/pages/ocr-review"
 import { Placeholder } from "@/pages/placeholder"
 
 const queryClient = new QueryClient({
@@ -32,10 +34,8 @@ export default function App() {
               <Route path="/cases" element={<Cases />} />
               <Route path="/cases/new" element={<CaseEntry />} />
               <Route path="/cases/:recordId" element={<CaseDetail />} />
-              <Route
-                path="/intake"
-                element={<Placeholder title="导入校对" />}
-              />
+              <Route path="/intake" element={<Intake />} />
+              <Route path="/intake/:jobId" element={<OcrReview />} />
               <Route
                 path="/learning"
                 element={<Placeholder title="跟师学习" />}
