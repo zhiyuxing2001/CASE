@@ -269,3 +269,83 @@ class OcrCommit(BaseModel):
     complaint: str = ""
     present_illness: str = ""
 
+
+# ---------------------------------------------------------------------------
+# 跟师学习
+# ---------------------------------------------------------------------------
+
+class NoteCreate(BaseModel):
+    note_type: int = 1
+    title: str
+    content_md: str = ""
+    record_id: int | None = None
+    mentor_id: str | None = None
+
+
+class NoteUpdate(BaseModel):
+    note_type: int | None = None
+    title: str | None = None
+    content_md: str | None = None
+    status: int | None = None
+    record_id: int | None = None
+    mentor_id: str | None = None
+
+
+class CommentCreate(BaseModel):
+    mentor_id: str | None = None
+    content: str
+    comment_type: int = 0
+    is_ai_generated: bool = False
+
+
+class CommentOut(BaseModel):
+    comment_id: int
+    mentor_id: str | None
+    mentor_name: str
+    content: str
+    comment_type: int
+    is_ai_generated: bool
+    commented_at: str
+
+
+class NoteSummary(BaseModel):
+    note_id: str
+    note_type: int
+    title: str
+    status: int
+    record_id: int | None
+    mentor_name: str
+    word_count: int
+    is_ai_assisted: bool
+    updated_at: str
+
+
+class NoteList(BaseModel):
+    total: int
+    items: list[NoteSummary]
+
+
+class NoteDetail(BaseModel):
+    note_id: str
+    note_type: int
+    title: str
+    content_md: str
+    status: int
+    record_id: int | None
+    mentor_id: str | None = None
+    mentor_name: str
+    word_count: int
+    is_ai_assisted: bool
+    created_at: str
+    updated_at: str
+    comments: list[CommentOut]
+    record: dict | None
+
+
+class ProgressOut(BaseModel):
+    note_counts: dict[str, int]
+    total_records: int
+    total_patients: int
+    total_syndromes: int
+    top_syndromes: list[dict]
+
