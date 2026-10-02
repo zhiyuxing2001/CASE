@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import __version__, schemas
-from .api import dictionary, meta, records, search
+from .api import attachments, dictionary, meta, ocr, records, search
 from .config import settings
 
 
@@ -32,6 +32,8 @@ def create_app() -> FastAPI:
     app.include_router(search.router)
     app.include_router(dictionary.router)
     app.include_router(meta.router)
+    app.include_router(attachments.router)
+    app.include_router(ocr.router)
 
     @app.get("/api/health", response_model=schemas.Health, tags=["health"])
     def health() -> schemas.Health:

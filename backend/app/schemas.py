@@ -223,3 +223,49 @@ class AuditEntry(BaseModel):
     changed_at: str
     note: str
 
+
+# ---------------------------------------------------------------------------
+# OCR
+# ---------------------------------------------------------------------------
+
+class QualityReport(BaseModel):
+    width: int
+    height: int
+    sharpness: float
+    blurry: bool
+
+
+class AttachmentCreated(BaseModel):
+    attach_id: str
+    quality: QualityReport
+
+
+class OcrLine(BaseModel):
+    text: str
+    confidence: float
+    bbox: list[float]  # 归一化 [x, y, w, h]，原点左上角
+
+
+class OcrJobCreate(BaseModel):
+    attach_id: str
+    doc_type: int = 0
+
+
+class OcrJobOut(BaseModel):
+    job_id: str
+    attach_id: str
+    status: int
+    degraded_mode: int
+    vision_text: str
+    lines: list[OcrLine]
+
+
+class OcrCommit(BaseModel):
+    patient_name: str = ""
+    patient_id: str | None = None
+    gender: bool = False
+    birthday: date | None = None
+    clinic_date: date
+    complaint: str = ""
+    present_illness: str = ""
+
