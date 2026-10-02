@@ -29,7 +29,7 @@ if str(BACKEND_DIR) not in sys.path:
 
 from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402
-from sqlalchemy import inspect, text  # noqa: E402
+from sqlalchemy import inspect  # noqa: E402
 
 from app.config import settings  # noqa: E402
 from app.db import make_engine  # noqa: E402
@@ -45,22 +45,39 @@ def run_migrations() -> None:
 
 
 def reset_database() -> None:
-    """Drop every table, including the search objects."""
-    engine = make_engine()
-    with engine.begin() as connection:
-        connection.exec_driver_sql("DROP TABLE IF EXISTS case_search_fts")
-        connection.exec_driver_sql("DROP TABLE IF EXISTS case_search")
-        connection.exec_driver_sql("DROP TABLE IF EXISTS alembic_version")
-    engine.dispose()
+    """Return the database to a pristine state.
+
+    For a file-backed SQLite database the whole file is removed, which is
+    unambiguous and cannot leave a half-dropped schema behind. Dropping
+    tables one by one does not work here: foreign keys are enforced, so
+    only a dependency-ordered drop succeeds, and a failure part way
+    through leaves the database inconsistent.
+
+    Any other backend falls back to dropping every table with foreign key
+    enforcement temporarily disabled.
+    """
+    url = settings.resolved_database_url()
+    if url.startswith("sqlite:///") and ":memory:" not in url:
+        for suffix in ("", "-wal", "-shm"):
+            Path(str(settings.db_path) + suffix).unlink(missing_ok=True)
+        return
 
     engine = make_engine()
-    inspector = inspect(engine)
-    with engine.begin() as connection:
-        for table in inspector.get_table_names():
-            if table.startswith("sqlite_"):
-                continue
-            connection.execute(text(f'DROP TABLE IF EXISTS "{table}"'))
-    engine.dispose()
+    raw = engine.raw_connection()
+    try:
+        raw.execute("PRAGMA foreign_keys=OFF")
+        names = [
+            row[0] for row in raw.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+            )
+        ]
+        for name in names:
+            raw.execute(f'DROP TABLE IF EXISTS "{name}"')
+        raw.commit()
+    finally:
+        raw.close()
+        engine.dispose()
 
 
 def main() -> int:
@@ -100,8 +117,14 @@ def main() -> int:
     indexed = rebuild_search_index(engine)
     print(f"    已索引 {indexed} 条病案")
 
-    tables = [t for t in inspect(engine).get_table_names()
-              if not t.startswith("sqlite_") and t != "alembic_version"]
+    # Exclude SQLite internals, the Alembic bookkeeping table, the search
+    # aggregate and the FTS5 shadow tables (_data, _idx, _docsize, _config).
+    tables = [
+        name for name in inspect(engine).get_table_names()
+        if not name.startswith("sqlite_")
+        and name != "alembic_version"
+        and not name.startswith("case_search")
+    ]
     engine.dispose()
 
     print()
