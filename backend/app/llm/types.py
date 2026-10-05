@@ -42,6 +42,7 @@ class Message:
 class ChatRequest:
     task: Task
     messages: Sequence[Message]
+    images: Sequence[str] = ()  # data URL 列表，如 "data:image/jpeg;base64,..."
     temperature: float = 0.2
     max_tokens: int | None = None
     json_schema: Mapping[str, Any] | None = None

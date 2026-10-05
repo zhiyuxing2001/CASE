@@ -6,18 +6,30 @@ API Key，未配置时降级为仅通道 A——识别文本仍可用于人工�
 
 from __future__ import annotations
 
+import base64
+import json
+
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 from ulid import ULID
 
 from .. import schemas
 from ..config import settings
+from ..llm import ChatRequest, Message, Task, get_router, parse_json
+from ..llm import prompts
 from ..models import Attachment, CaseNarrative, InfoPatient, OcrJob
 from ..ocr import lines_to_display, run_vision
 from ..services.record_service import create_record
 from .deps import get_db
 
 router = APIRouter(prefix="/api/ocr", tags=["ocr"])
+
+
+def _image_data_url(attachment: Attachment, path) -> str:
+    mime = attachment.mime_type or "image/jpeg"
+    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:{mime};base64,{encoded}"
 
 
 def _job_out(job: OcrJob, raw_lines: list) -> schemas.OcrJobOut:
@@ -77,6 +89,76 @@ def get_job(job_id: str, db: Session = Depends(get_db)) -> schemas.OcrJobOut:
     if job is None:
         raise HTTPException(status_code=404, detail="作业不存在")
     return _job_out(job, job.vision_json or [])
+
+
+@router.post("/jobs/{job_id}/structure", response_model=schemas.StructureResult)
+def structure_job(
+    job_id: str,
+    db: Session = Depends(get_db),
+) -> schemas.StructureResult:
+    """通道 B：用 DeepSeek 视觉模型把通道 A 的文本结构化为字段。
+
+    无 Key 时降级返回空结构；解析失败记录到 job.error_message 并报错。
+    """
+    job = db.get(OcrJob, job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="作业不存在")
+    if job.status != 2:
+        raise HTTPException(status_code=400, detail="通道 A 尚未完成，无法结构化")
+
+    attachment = db.get(Attachment, job.attach_id)
+    if attachment is None:
+        raise HTTPException(status_code=404, detail="附件不存在")
+    path = settings.data_dir / attachment.file_path
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="文件已丢失")
+
+    router = get_router()
+    empty = schemas.StructureResult(
+        structured=schemas.OcrStructured(), model="",
+        prompt_version=prompts.PROMPT_VERSION,
+        degraded=True, ai_configured=router.configured,
+    )
+    if not router.configured:
+        return empty
+
+    data_url = _image_data_url(attachment, path)
+    messages = [
+        Message("system", prompts.SYSTEM_OCR_STRUCTURING),
+        Message("user", prompts.ocr_structuring_user(job.vision_text or "")),
+    ]
+    resp = router.chat(ChatRequest(
+        task=Task.OCR_STRUCTURING,
+        messages=messages,
+        images=[data_url],
+        json_schema={"type": "object"},  # 触发 response_format=json_object
+        temperature=0.1,
+    ))
+    if resp is None or not resp.text:
+        return empty
+
+    try:
+        structured = schemas.OcrStructured.model_validate(parse_json(resp.text))
+    except (json.JSONDecodeError, ValidationError) as exc:  # noqa: BLE001
+        job.error_message = f"结构化解析失败：{exc}"
+        db.commit()
+        raise HTTPException(status_code=500, detail=f"结构化结果解析失败：{exc}") from exc
+
+    job.structured_json = structured.model_dump()
+    job.model = resp.model
+    job.prompt_version = prompts.PROMPT_VERSION
+    job.tokens_in = resp.usage.tokens_in
+    job.tokens_cached = resp.usage.tokens_cached
+    job.tokens_out = resp.usage.tokens_out
+    job.cost_yuan = resp.usage.cost_yuan
+    job.duration_ms = resp.latency_ms
+    db.commit()
+
+    return schemas.StructureResult(
+        structured=structured, model=resp.model,
+        prompt_version=prompts.PROMPT_VERSION,
+        degraded=False, ai_configured=True,
+    )
 
 
 @router.post("/jobs/{job_id}/commit")

@@ -92,6 +92,10 @@ class HerbSuggestion(BaseModel):
     similarity: float
 
 
+class TermNormalizeRequest(BaseModel):
+    term: str
+
+
 class SyndromeOption(BaseModel):
     syndrome_id: str
     syndrome_name: str
@@ -269,6 +273,34 @@ class OcrCommit(BaseModel):
     clinic_date: date
     complaint: str = ""
     present_illness: str = ""
+
+
+class OcrHerb(BaseModel):
+    sequence: int = 0
+    herb_name: str = ""
+    dose: float | None = None
+    unit: str = "g"
+    processing: str = ""
+    decoction_note: str = ""
+    role: str = ""
+    needs_review: bool = False
+    confidence: float = 1.0
+
+
+class OcrStructured(BaseModel):
+    """通道 B 的结构化输出，字段与写入模型一致，可直接落库。"""
+    narrative: NarrativeCreate = Field(default_factory=NarrativeCreate)
+    diagnosis: DiagnosisCreate = Field(default_factory=DiagnosisCreate)
+    treatment: TreatmentCreate = Field(default_factory=TreatmentCreate)
+    herbs: list[OcrHerb] = Field(default_factory=list)
+
+
+class StructureResult(BaseModel):
+    structured: OcrStructured
+    model: str
+    prompt_version: str
+    degraded: bool
+    ai_configured: bool
 
 
 # ---------------------------------------------------------------------------

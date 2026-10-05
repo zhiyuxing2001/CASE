@@ -12,18 +12,12 @@ from sqlalchemy.orm import Session
 
 from .. import schemas
 from ..llm import ChatRequest, Message, Task, get_router
+from ..llm import prompts
 from ..models import CaseNarrative, Diagnosis, InfoPatient, InfoRecord
 from ..search import search_cases
 from .deps import get_db
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
-
-_SYSTEM_QA = (
-    "你是中医跟诊学习助手。基于给定的病案资料回答问题，"
-    "引用具体病案时用 [编号] 标注。若资料不足以回答，请明确说明。"
-)
-_SYSTEM_DRAFT = "你是中医跟诊学习助手，帮助撰写学习心得初稿，用 Markdown 输出。"
-_SYSTEM_POLISH = "你是中医学术写作助手，把下面这段心得润色得更专业、条理清晰，保持原意与要点，用 Markdown 输出。"
 
 
 def _sources(db: Session, hits: list[dict]) -> list[schemas.AiSource]:
@@ -100,8 +94,8 @@ def chat(payload: schemas.AiChatRequest,
         for i, s in enumerate(sources)
     )
     messages = [
-        Message("system", _SYSTEM_QA),
-        Message("user", f"病案资料：\n{context}\n\n问题：{payload.question}"),
+        Message("system", prompts.SYSTEM_CASE_QA),
+        Message("user", prompts.case_qa_user(context, payload.question)),
     ]
     resp = router.chat(ChatRequest(task=Task.CASE_QA, messages=messages))
     if resp is None:
@@ -124,10 +118,10 @@ def draft(payload: schemas.AiDraftRequest,
     context = ""
     if payload.case_id:
         context = _case_context(db, payload.case_id)
-    user = f"主题：{payload.topic}\n" + (f"参考病案：\n{context}\n" if context else "")
-    messages = [Message("system", _SYSTEM_DRAFT), Message("user", user)]
+    user = prompts.note_draft_user(payload.topic, context)
+    messages = [Message("system", prompts.SYSTEM_NOTE_DRAFT), Message("user", user)]
     resp = router.chat(ChatRequest(task=Task.NOTE_DRAFT, messages=messages,
-                                   temperature=0.4))
+                                   temperature=0.5))
     if resp is None:
         return schemas.AiDraftResponse(text="", degraded=True, ai_configured=True)
     return schemas.AiDraftResponse(text=resp.text, degraded=False, ai_configured=True)
@@ -138,7 +132,8 @@ def polish(payload: schemas.AiPolishRequest) -> schemas.AiDraftResponse:
     router = get_router()
     if not router.configured:
         return schemas.AiDraftResponse(text="", degraded=True, ai_configured=False)
-    messages = [Message("system", _SYSTEM_POLISH), Message("user", payload.text)]
+    messages = [Message("system", prompts.SYSTEM_NOTE_POLISH),
+                Message("user", prompts.note_polish_user(payload.text))]
     resp = router.chat(ChatRequest(task=Task.NOTE_POLISH, messages=messages,
                                    temperature=0.3))
     if resp is None:

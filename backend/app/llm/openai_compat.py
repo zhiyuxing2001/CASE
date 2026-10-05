@@ -25,10 +25,24 @@ class OpenAiCompatibleProvider:
 
     def chat(self, request: ChatRequest) -> ChatResponse:
         url = f"{self.endpoint.base_url.rstrip('/')}/chat/completions"
+        messages: list[dict] = [
+            {"role": m.role, "content": m.content} for m in request.messages
+        ]
+        # 视觉：把 data URL 图片附到最后一条 user 消息的 content 上
+        if request.images:
+            for m in reversed(messages):
+                if m["role"] == "user":
+                    parts: list[dict] = [{"type": "text", "text": m["content"]}]
+                    parts += [
+                        {"type": "image_url", "image_url": {"url": img}}
+                        for img in request.images
+                    ]
+                    m["content"] = parts
+                    break
+
         payload: dict = {
             "model": self.endpoint.model,
-            "messages": [{"role": m.role, "content": m.content}
-                         for m in request.messages],
+            "messages": messages,
             "temperature": request.temperature,
             "stream": False,
         }

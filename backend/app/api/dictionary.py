@@ -9,6 +9,8 @@ from ulid import ULID
 
 from .. import schemas
 from ..dictionary import resolve_herb, suggest_herbs
+from ..llm import ChatRequest, Message, Task, get_router, parse_json
+from ..llm import prompts
 from ..models import DictFormula, DictHerb, DictSyndrome, DictTerm
 from .deps import get_db
 
@@ -64,6 +66,57 @@ def suggest(
                                similarity=round(score, 4))
         for herb_id, herb_name, score in suggest_herbs(db, name, limit=limit)
     ]
+
+
+@router.post("/herbs/normalize", response_model=schemas.HerbResolution)
+def normalize_herb(
+    payload: schemas.TermNormalizeRequest,
+    db: Session = Depends(get_db),
+) -> schemas.HerbResolution:
+    """术语归一：本地字典优先，未命中才调模型兜底。"""
+    local = resolve_herb(db, payload.term)
+    if local.herb_id:
+        return schemas.HerbResolution(
+            entered=payload.term, normalised=local.normalised,
+            herb_id=local.herb_id, matched_by="local",
+            is_ocr_misread=local.is_ocr_misread,
+        )
+
+    unmatched = schemas.HerbResolution(
+        entered=payload.term, normalised=payload.term, herb_id=None,
+        matched_by="none", is_ocr_misread=False,
+    )
+    router = get_router()
+    if not router.configured:
+        return unmatched
+
+    candidates = [name for _, name, _ in suggest_herbs(db, payload.term, limit=10)]
+    messages = [
+        Message("system", prompts.SYSTEM_TERM_NORMALIZE),
+        Message("user", prompts.term_normalize_user(payload.term, candidates)),
+    ]
+    resp = router.chat(ChatRequest(
+        task=Task.TERM_NORMALIZE, messages=messages,
+        json_schema={"type": "object"}, temperature=0.1,
+    ))
+    if resp is None or not resp.text:
+        return unmatched
+    try:
+        parsed = parse_json(resp.text)
+    except Exception:  # noqa: BLE001
+        return unmatched
+
+    normalized = parsed.get("normalized", payload.term)
+    if not parsed.get("matched") or not normalized or normalized == payload.term:
+        return unmatched
+
+    herb = db.scalar(select(DictHerb).where(
+        DictHerb.herb_name == normalized, DictHerb.is_active.is_(True)))
+    return schemas.HerbResolution(
+        entered=payload.term, normalised=normalized,
+        herb_id=herb.herb_id if herb else None,
+        matched_by="llm", is_ocr_misread=True,
+    )
 
 
 @router.get("/syndromes", response_model=list[schemas.SyndromeOption])
