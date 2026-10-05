@@ -27,14 +27,42 @@ export interface OcrJobOut {
   lines: OcrLine[]
 }
 
+export interface OcrHerb {
+  sequence: number
+  herb_name: string
+  dose: number | null
+  unit: string
+  processing: string
+  decoction_note: string
+  role: string
+  needs_review: boolean
+  confidence: number
+}
+
+export interface OcrStructured {
+  narrative: Record<string, string>
+  diagnosis: Record<string, string | null>
+  treatment: Record<string, string | number | null>
+  herbs: OcrHerb[]
+}
+
+export interface StructureResult {
+  structured: OcrStructured
+  model: string
+  prompt_version: string
+  degraded: boolean
+  ai_configured: boolean
+}
+
 export interface OcrCommitPayload {
   patient_name: string
   patient_id?: string | null
   gender: boolean
   birthday: string
   clinic_date: string
-  complaint: string
-  present_illness: string
+  structured?: OcrStructured | null
+  complaint?: string
+  present_illness?: string
 }
 
 export async function uploadImage(file: File): Promise<AttachmentCreated> {
@@ -53,6 +81,10 @@ export function createOcrJob(attach_id: string): Promise<OcrJobOut> {
 
 export function fetchOcrJob(jobId: string): Promise<OcrJobOut> {
   return getJSON<OcrJobOut>(`/api/ocr/jobs/${jobId}`)
+}
+
+export function structureOcrJob(jobId: string): Promise<StructureResult> {
+  return postJSON<StructureResult>(`/api/ocr/jobs/${jobId}/structure`, {})
 }
 
 export function commitOcrJob(
