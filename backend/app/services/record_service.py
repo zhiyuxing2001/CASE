@@ -95,6 +95,7 @@ def create_record(db: Session, payload: schemas.RecordCreate) -> int:
             herb_name_norm=resolution.normalised, herb_id=resolution.herb_id,
             dose=herb.dose, unit=herb.unit, processing=herb.processing,
             decoction_note=herb.decoction_note, role=herb.role,
+            needs_review=herb.needs_review, confidence=herb.confidence,
         ))
 
     db.commit()

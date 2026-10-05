@@ -197,6 +197,8 @@ class HerbCreate(BaseModel):
     decoction_note: str = ""
     role: str = ""
     sequence: int = 0
+    needs_review: bool = False
+    confidence: float = 1.0
 
 
 class RecordCreate(BaseModel):
@@ -265,16 +267,6 @@ class OcrJobOut(BaseModel):
     lines: list[OcrLine]
 
 
-class OcrCommit(BaseModel):
-    patient_name: str = ""
-    patient_id: str | None = None
-    gender: bool = False
-    birthday: date | None = None
-    clinic_date: date
-    complaint: str = ""
-    present_illness: str = ""
-
-
 class OcrHerb(BaseModel):
     sequence: int = 0
     herb_name: str = ""
@@ -301,6 +293,18 @@ class StructureResult(BaseModel):
     prompt_version: str
     degraded: bool
     ai_configured: bool
+
+
+class OcrCommit(BaseModel):
+    patient_name: str = ""
+    patient_id: str | None = None
+    gender: bool = False
+    birthday: date | None = None
+    clinic_date: date
+    # 通道 B 结构化结果（优先）；为空时回落到下面两个字段
+    structured: OcrStructured | None = None
+    complaint: str = ""
+    present_illness: str = ""
 
 
 # ---------------------------------------------------------------------------

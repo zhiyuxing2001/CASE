@@ -187,14 +187,33 @@ def commit_job(
         ))
         db.flush()
 
-    record_id = create_record(db, schemas.RecordCreate(
-        patient_id=patient_id,
-        clinic_date=payload.clinic_date,
-        narrative=schemas.NarrativeCreate(
-            complaint=payload.complaint,
-            present_illness=payload.present_illness,
-        ),
-    ))
+    if payload.structured is not None:
+        s = payload.structured
+        record_id = create_record(db, schemas.RecordCreate(
+            patient_id=patient_id,
+            clinic_date=payload.clinic_date,
+            narrative=s.narrative,
+            diagnosis=s.diagnosis,
+            treatment=s.treatment,
+            herbs=[
+                schemas.HerbCreate(
+                    herb_name=h.herb_name, dose=h.dose, unit=h.unit,
+                    processing=h.processing, decoction_note=h.decoction_note,
+                    role=h.role, sequence=h.sequence,
+                    needs_review=h.needs_review, confidence=h.confidence,
+                )
+                for h in s.herbs
+            ],
+        ))
+    else:
+        record_id = create_record(db, schemas.RecordCreate(
+            patient_id=patient_id,
+            clinic_date=payload.clinic_date,
+            narrative=schemas.NarrativeCreate(
+                complaint=payload.complaint,
+                present_illness=payload.present_illness,
+            ),
+        ))
 
     # OCR 原文入库，供溯源与将来通道 B 的结构化
     narrative = db.get(CaseNarrative, record_id)
