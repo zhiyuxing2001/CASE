@@ -222,39 +222,28 @@ export function CaseDetail() {
         </div>
         {herbs.length > 0 && (
           <div className="py-2">
-            <div className="mb-2 text-sm text-muted-foreground">药味明细</div>
-            <div className="grid grid-cols-[2rem_1fr_5rem_1fr_1fr_4rem] gap-2 border-b px-2 pb-1 text-xs text-muted-foreground">
-              <span>#</span><span>药味</span><span>剂量</span><span>炮制</span>
-              <span>煎煮要求</span><span>状态</span>
+            <div className="mb-2 text-sm text-muted-foreground">
+              处方（每行四味，特殊煎服法为上角标）
             </div>
-            {herbs.map((h) => (
-              <div
-                key={h.sequence}
-                className="grid grid-cols-[2rem_1fr_5rem_1fr_1fr_4rem] items-center gap-2 border-b px-2 py-1.5 text-sm"
-              >
-                <span className="text-muted-foreground">{h.sequence + 1}</span>
-                <span className="font-medium">
-                  {h.herb_name}
-                  {h.herb_name_norm && h.herb_name_norm !== h.herb_name && (
-                    <span className="ml-1 text-xs text-muted-foreground">
-                      ({h.herb_name_norm})
-                    </span>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
+              {herbs.map((h) => (
+                <div
+                  key={h.sequence}
+                  className="font-mono text-sm leading-relaxed"
+                  title={h.needs_review ? "待校对" : undefined}
+                >
+                  <span className={h.needs_review ? "text-amber-600" : undefined}>
+                    {h.herb_name_norm || h.herb_name}
+                    {h.dose != null ? `${h.dose}${h.unit}` : ""}
+                  </span>
+                  {h.decoction_note && (
+                    <sup className="ml-0.5 text-[10px] text-muted-foreground">
+                      {h.decoction_note}
+                    </sup>
                   )}
-                </span>
-                <span className="font-mono tabular-nums">
-                  {h.dose != null ? `${h.dose}${h.unit}` : "—"}
-                </span>
-                <span className="text-muted-foreground">{h.processing || "—"}</span>
-                <span className="text-muted-foreground">{h.decoction_note || "—"}</span>
-                <span>
-                  {h.needs_review ? (
-                    <Badge variant="warning">待校对</Badge>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">已确认</span>
-                  )}
-                </span>
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
           </div>
         )}
         <KV label="医嘱与调护" value={data.treatment.advice as string} />
