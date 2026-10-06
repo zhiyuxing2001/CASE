@@ -137,3 +137,29 @@ export function fetchPatients(q = ""): Promise<PatientOption[]> {
 export function fetchPatient(id: string): Promise<PatientOption> {
   return getJSON<PatientOption>(`/api/patients/${id}`)
 }
+
+export function deleteCourses(courseIds: string[]): Promise<{ deleted: number }> {
+  return postJSON<{ deleted: number }>("/api/courses/delete", { course_ids: courseIds })
+}
+
+export async function exportCourses(courseIds: string[]): Promise<void> {
+  const res = await fetch("/api/courses/export", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ course_ids: courseIds }),
+  })
+  if (!res.ok) {
+    throw new Error(`导出失败 (${res.status})`)
+  }
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  const cd = res.headers.get("Content-Disposition") ?? ""
+  const match = /filename="?([^"]+)"?/.exec(cd)
+  a.download = match?.[1] ?? "case-export.xlsx"
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}

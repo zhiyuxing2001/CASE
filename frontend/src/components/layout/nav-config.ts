@@ -39,10 +39,10 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "病案",
     items: [
       {
-        title: "病案检索",
+        title: "病案列表",
         path: "/cases",
         icon: FolderOpen,
-        description: "浏览、检索与录入病案",
+        description: "浏览、检索、选择、删除与导出病案",
       },
       {
         title: "病案分析",
@@ -102,7 +102,7 @@ export const NAV_GROUPS: NavGroup[] = [
 
 export const NAV_TITLES: Record<string, string> = {
   "/dashboard": "工作台",
-  "/cases": "病案检索",
+  "/cases": "病案列表",
   "/analytics": "病案分析",
   "/intake": "导入校对",
   "/learning": "跟师学习",

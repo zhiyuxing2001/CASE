@@ -1,9 +1,10 @@
-import { useQuery } from "@tanstack/react-query"
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Search, X } from "lucide-react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { CalendarDays, ChevronLeft, ChevronRight, Download, Plus, Search, Trash2, X } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 
-import { fetchCourses, fetchMentors, type RecordQuery } from "@/api/cases"
+import { deleteCourses, exportCourses, fetchCourses, fetchMentors, type RecordQuery } from "@/api/cases"
 import type { MentorOption } from "@/api/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -27,8 +28,10 @@ import {
 
 export function Cases() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [draft, setDraft] = useState<RecordQuery>({ page: 1, page_size: 20 })
   const [query, setQuery] = useState<RecordQuery>({ page: 1, page_size: 20 })
+  const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const { data: mentors = [] } = useQuery({
     queryKey: ["mentors"],
@@ -44,6 +47,44 @@ export function Cases() {
     () => (data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1),
     [data],
   )
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteCourses([...selected]),
+    onSuccess: (res) => {
+      toast.success(`已删除 ${res.deleted} 条就诊记录`)
+      setSelected(new Set())
+      void queryClient.invalidateQueries({ queryKey: ["courses"] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const exportMutation = useMutation({
+    mutationFn: () => exportCourses([...selected]),
+    onSuccess: () => toast.success("已导出 Excel"),
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  function toggleSelect(courseId: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(courseId)) next.delete(courseId)
+      else next.add(courseId)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    if (!data) return
+    const allIds = data.items.map((i) => i.course_id)
+    const allSelected = allIds.every((id) => selected.has(id))
+    setSelected(allSelected ? new Set() : new Set(allIds))
+  }
+
+  function handleDelete() {
+    if (window.confirm(`确定删除选中的 ${selected.size} 个病案？其下所有就诊记录将被软删除。`)) {
+      deleteMutation.mutate()
+    }
+  }
 
   function applySearch() {
     setQuery({ ...draft, page: 1 })
@@ -65,9 +106,12 @@ export function Cases() {
     <div className="mx-auto max-w-7xl space-y-4 p-8">
       {/* 页头 */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          每份病案是一段病程（初诊 + 随诊），进入后可添加新的随诊资料。
-        </p>
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight">病案列表</h2>
+          <p className="text-sm text-muted-foreground">
+            每份病案是一段病程（初诊 + 随诊），进入后可添加新的随诊资料。
+          </p>
+        </div>
         <Button asChild>
           <Link to="/cases/new">
             <Plus className="h-4 w-4" /> 录入新病案
@@ -114,6 +158,21 @@ export function Cases() {
         </CardContent>
       </Card>
 
+      {/* 批量操作栏 */}
+      {selected.size > 0 && (
+        <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2">
+          <span className="text-sm">已选 {selected.size} 个病案</span>
+          <div className="ml-auto flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => exportMutation.mutate()} disabled={exportMutation.isPending}>
+              <Download className="h-4 w-4" /> 导出
+            </Button>
+            <Button size="sm" variant="destructive" onClick={handleDelete} disabled={deleteMutation.isPending}>
+              <Trash2 className="h-4 w-4" /> 删除
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* 结果区 */}
       <Card>
         <CardContent className="p-0">
@@ -125,6 +184,14 @@ export function Cases() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-primary"
+                      checked={data?.items.length ? data.items.every((i) => selected.has(i.course_id)) : false}
+                      onChange={toggleAll}
+                    />
+                  </TableHead>
                   <TableHead>患者</TableHead>
                   <TableHead>主诉（初诊）</TableHead>
                   <TableHead>证型</TableHead>
@@ -136,14 +203,14 @@ export function Cases() {
               <TableBody>
                 {isLoading && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                       加载中…
                     </TableCell>
                   </TableRow>
                 )}
                 {!isLoading && data && data.items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                       暂无匹配病案
                     </TableCell>
                   </TableRow>
@@ -154,6 +221,14 @@ export function Cases() {
                     className="cursor-pointer"
                     onClick={() => navigate(`/cases/${row.first_record_id}`)}
                   >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-primary"
+                        checked={selected.has(row.course_id)}
+                        onChange={() => toggleSelect(row.course_id)}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">{row.patient_name}</TableCell>
                     <TableCell className="max-w-[260px] truncate">{row.complaint || "—"}</TableCell>
                     <TableCell>{row.syndrome || "—"}</TableCell>
