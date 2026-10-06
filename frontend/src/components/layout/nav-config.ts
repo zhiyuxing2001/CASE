@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   BookMarked,
   Database,
   FolderOpen,
@@ -42,6 +43,12 @@ export const NAV_GROUPS: NavGroup[] = [
         path: "/cases",
         icon: FolderOpen,
         description: "浏览、检索与录入病案",
+      },
+      {
+        title: "病案分析",
+        path: "/analytics",
+        icon: BarChart3,
+        description: "证型、药味与舌脉频次统计",
       },
       {
         title: "导入校对",
@@ -96,6 +103,7 @@ export const NAV_GROUPS: NavGroup[] = [
 export const NAV_TITLES: Record<string, string> = {
   "/dashboard": "工作台",
   "/cases": "病案检索",
+  "/analytics": "病案分析",
   "/intake": "导入校对",
   "/learning": "跟师学习",
   "/assistant": "AI 助手",
