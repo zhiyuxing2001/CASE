@@ -17,6 +17,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from .. import schemas
+from ..services.report_service import generate_case_report
 from .deps import get_db
 
 router = APIRouter(prefix="/api/courses", tags=["courses"])
@@ -220,5 +221,22 @@ def export_courses(
     return StreamingResponse(
         buf,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/{course_id}/report")
+def course_report(
+    course_id: str,
+    db: Session = Depends(get_db),
+) -> StreamingResponse:
+    """把单个病案按模版导出为 Word 报告（含关联学习心得）。"""
+    buf = generate_case_report(db, course_id)
+    if buf is None:
+        raise HTTPException(status_code=404, detail="病案不存在")
+    filename = f"case-{course_id[:8]}.docx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

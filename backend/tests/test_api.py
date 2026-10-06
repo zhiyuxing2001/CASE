@@ -166,6 +166,12 @@ def test_delete_and_export_courses(engine: Engine) -> None:
         assert r.headers["content-type"].startswith(
             "application/vnd.openxmlformats-officedocument.spreadsheetml")
 
+        # 导出 Word 报告
+        r = client.get(f"/api/courses/{cid}/report")
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith(
+            "application/vnd.openxmlformats-officedocument.wordprocessingml")
+
         # 删除（软删除）
         r = client.post("/api/courses/delete", json={"course_ids": [cid]})
         assert r.status_code == 200
