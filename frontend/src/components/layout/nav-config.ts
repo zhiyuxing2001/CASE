@@ -5,6 +5,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   ScanLine,
+  Settings,
   Sparkles,
   type LucideIcon,
 } from "lucide-react"
@@ -82,6 +83,12 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Database,
         description: "备份、审计与完整性自检",
       },
+      {
+        title: "设置",
+        path: "/settings",
+        icon: Settings,
+        description: "DeepSeek API Key 与模型",
+      },
     ],
   },
 ]
@@ -94,4 +101,5 @@ export const NAV_TITLES: Record<string, string> = {
   "/assistant": "AI 助手",
   "/dictionary": "字典维护",
   "/admin": "数据管理",
+  "/settings": "设置",
 }

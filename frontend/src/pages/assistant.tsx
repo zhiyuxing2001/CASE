@@ -35,9 +35,10 @@ export function Assistant() {
       {!status?.configured && (
         <Card className="border-warning/50 bg-warning/5">
           <CardContent className="p-4 text-sm">
-            尚未配置 DeepSeek API Key（见 <code className="rounded bg-muted px-1">.env</code> 的{" "}
-            <code className="rounded bg-muted px-1">DEEPSEEK_API_KEY</code>）。
-            病案问答将降级为<b>仅返回检索到的相关病案</b>，写作辅助暂不可用；其余功能完全不受影响。
+            尚未配置 DeepSeek API Key。病案问答将降级为<b>仅返回检索到的相关病案</b>，写作辅助暂不可用；其余功能完全不受影响。{" "}
+            <Link to="/settings" className="font-medium text-primary underline underline-offset-2">
+              前往设置页配置 →
+            </Link>
           </CardContent>
         </Card>
       )}

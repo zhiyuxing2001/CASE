@@ -15,6 +15,7 @@ import { Intake } from "@/pages/intake"
 import { Learning } from "@/pages/learning"
 import { NoteEditor } from "@/pages/note-editor"
 import { OcrReview } from "@/pages/ocr-review"
+import { Settings } from "@/pages/settings"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,7 @@ export default function App() {
               <Route path="/assistant" element={<Assistant />} />
               <Route path="/dictionary" element={<Dictionary />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Routes>
