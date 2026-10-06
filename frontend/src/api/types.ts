@@ -40,6 +40,8 @@ export interface CourseSummary {
   complaint: string
   syndrome: string
   tcm_disease: string
+  wm_diagnosis: string
+  doctor_name: string
   mentor_name: string
   needs_review: boolean
 }

@@ -194,7 +194,9 @@ export function Cases() {
                   </TableHead>
                   <TableHead>患者</TableHead>
                   <TableHead>主诉（初诊）</TableHead>
-                  <TableHead>证型</TableHead>
+                  <TableHead>中医诊断</TableHead>
+                  <TableHead>西医诊断</TableHead>
+                  <TableHead>就诊医师</TableHead>
                   <TableHead className="w-24">就诊次数</TableHead>
                   <TableHead className="w-44">病程</TableHead>
                   <TableHead className="w-20">状态</TableHead>
@@ -203,14 +205,14 @@ export function Cases() {
               <TableBody>
                 {isLoading && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
                       加载中…
                     </TableCell>
                   </TableRow>
                 )}
                 {!isLoading && data && data.items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
                       暂无匹配病案
                     </TableCell>
                   </TableRow>
@@ -230,8 +232,14 @@ export function Cases() {
                       />
                     </TableCell>
                     <TableCell className="font-medium">{row.patient_name}</TableCell>
-                    <TableCell className="max-w-[260px] truncate">{row.complaint || "—"}</TableCell>
-                    <TableCell>{row.syndrome || "—"}</TableCell>
+                    <TableCell className="max-w-[240px] truncate">{row.complaint || "—"}</TableCell>
+                    <TableCell>
+                      {row.tcm_disease && row.syndrome
+                        ? `${row.tcm_disease}（${row.syndrome}）`
+                        : row.tcm_disease || row.syndrome || "—"}
+                    </TableCell>
+                    <TableCell>{row.wm_diagnosis || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{row.doctor_name || "—"}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{row.visit_count} 次</Badge>
                     </TableCell>
