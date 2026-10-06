@@ -547,3 +547,33 @@ class AiDraftResponse(BaseModel):
     degraded: bool
     ai_configured: bool
 
+
+
+# ---------------------------------------------------------------------------
+# 病案分析
+# ---------------------------------------------------------------------------
+
+class AnalyticsOverview(BaseModel):
+    total_courses: int
+    total_visits: int
+    total_patients: int
+    total_herbs: int
+    distinct_herbs: int
+    distinct_syndromes: int
+
+
+class FreqItem(BaseModel):
+    label: str
+    count: int
+
+
+class HerbFreq(BaseModel):
+    label: str
+    count: int
+    avg_dose: float | None = None
+
+
+class TongueDist(BaseModel):
+    body: list[FreqItem]
+    coating: list[FreqItem]
+    pulse: list[FreqItem]
