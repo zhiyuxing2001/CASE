@@ -32,6 +32,8 @@ SELECT
   n.complaint    AS complaint,
   d.syndrome     AS syndrome,
   d.tcm_disease  AS tcm_disease,
+  d.wm_diagnosis AS wm_diagnosis,
+  r.doctor_name  AS doctor_name,
   m.mentor_name  AS mentor_name,
   (SELECT COUNT(*) FROM info_record v
      WHERE v.course_id = r.course_id AND v.is_deleted = 0) AS visit_count,
@@ -101,6 +103,8 @@ def list_courses(
             complaint=row.complaint or "",
             syndrome=row.syndrome or "",
             tcm_disease=row.tcm_disease or "",
+            wm_diagnosis=row.wm_diagnosis or "",
+            doctor_name=row.doctor_name or "",
             mentor_name=row.mentor_name or "",
             needs_review=bool(row.needs_review),
         )

@@ -59,6 +59,8 @@ class CourseSummary(BaseModel):
     complaint: str
     syndrome: str
     tcm_disease: str
+    wm_diagnosis: str
+    doctor_name: str
     mentor_name: str
     needs_review: bool
 

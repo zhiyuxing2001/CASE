@@ -56,7 +56,8 @@ def _record(session: Session, pid: str, *, visit_no: int, father_id: int,
     record = InfoRecord(
         patient_id=pid, father_id=father_id or 0, visit_no=visit_no,
         visit_type=visit_type, clinic_date=clinic_date, age=age,
-        mentor_id="M-DEMO", department="消化科门诊", addr="中日友好医院",
+        doctor_name="李同学", mentor_id="M-DEMO",
+        department="消化科门诊", addr="中日友好医院",
     )
     session.add(record)
     session.flush()
