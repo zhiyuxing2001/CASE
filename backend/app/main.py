@@ -11,8 +11,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import __version__, schemas
 from .api import (admin, ai, attachments, dictionary, learning, meta, ocr,
-                  records, search)
+                  records, search, settings as settings_router)
 from .config import settings
+from .llm import get_router
 
 
 def create_app() -> FastAPI:
@@ -38,13 +39,14 @@ def create_app() -> FastAPI:
     app.include_router(learning.router)
     app.include_router(admin.router)
     app.include_router(ai.router)
+    app.include_router(settings_router.router)
 
     @app.get("/api/health", response_model=schemas.Health, tags=["health"])
     def health() -> schemas.Health:
         return schemas.Health(
             status="ok",
             database=settings.resolved_database_url(),
-            ai_configured=bool(settings.deepseek_api_key),
+            ai_configured=get_router().configured,
             version=__version__,
         )
 

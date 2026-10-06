@@ -53,8 +53,18 @@ class LlmRouter:
         return None
 
 
-_router = LlmRouter()
+_router: LlmRouter | None = None
 
 
 def get_router() -> LlmRouter:
+    """懒加载路由：首次调用时按当前配置构建端点。"""
+    global _router
+    if _router is None:
+        _router = LlmRouter()
     return _router
+
+
+def reset_router() -> None:
+    """清空缓存，使 API Key 等配置的改动在下次调用时立即生效。"""
+    global _router
+    _router = None

@@ -4,8 +4,11 @@
 change to a case is recorded with its previous and new value, so the
 learning history cannot be quietly rewritten.
 
-Secrets do not belong here. API keys live in ``.env``, which is
-gitignored; ``app_setting`` holds only non-sensitive preferences.
+``app_setting`` holds user preferences and the DeepSeek API key entered
+through the settings UI. The key lives in the local SQLite database
+(``data/case.db``, gitignored) — not in a tracked file — and is never
+written to the audit log or returned in plaintext by the API. ``.env``
+remains only as a first-run fallback.
 """
 
 from __future__ import annotations
@@ -38,7 +41,7 @@ class AuditLog(Base):
 
 
 class AppSetting(Base):
-    """应用设置表 — non-sensitive preferences only."""
+    """应用设置表 — 用户偏好与 DeepSeek API Key（仅存本机，不进审计）。"""
 
     __tablename__ = "app_setting"
 

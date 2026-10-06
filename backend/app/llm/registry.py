@@ -27,6 +27,18 @@ def _capabilities(raw: str) -> frozenset[Capability]:
     return frozenset(result)
 
 
+def _db_setting(key: str) -> str:
+    """从 app_setting 读设置项；表不存在或会话不可用时返回空串。"""
+    try:
+        from ..db import SessionLocal
+        from ..models import AppSetting
+        with SessionLocal() as session:
+            row = session.get(AppSetting, key)
+            return row.value if row and row.value else ""
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def build_registry() -> tuple[LlmEndpoint, ...]:
     names = [
         n.strip()
@@ -40,10 +52,15 @@ def build_registry() -> tuple[LlmEndpoint, ...]:
         def get(field: str, default: str = "") -> str:
             return os.getenv(prefix + field, default)
 
-        # deepseek-api 缺省时回落到 settings（读 .env 的 DEEPSEEK_* 变量）
-        base_url = get("BASE_URL", settings.deepseek_base_url)
-        api_key = get("API_KEY", settings.deepseek_api_key)
-        model = get("MODEL", settings.deepseek_text_model)
+        # deepseek-api 缺省时依次回落：环境变量 → 数据库 → .env
+        db_base = db_key = db_model = ""
+        if name == "deepseek-api":
+            db_base = _db_setting("deepseek_base_url")
+            db_key = _db_setting("deepseek_api_key")
+            db_model = _db_setting("deepseek_model")
+        base_url = get("BASE_URL", "") or db_base or settings.deepseek_base_url
+        api_key = get("API_KEY", "") or db_key or settings.deepseek_api_key
+        model = get("MODEL", "") or db_model or settings.deepseek_text_model
         caps = get("CAPABILITIES", DEFAULT_CAPS)
         kind_raw = get("KIND", "api")
         context = int(get("CONTEXT", "1000000") or "1000000")

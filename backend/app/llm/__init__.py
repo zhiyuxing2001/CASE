@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from .router import LlmRouter, get_router
+from .router import LlmRouter, get_router, reset_router
 from .types import (Capability, ChatRequest, ChatResponse, LlmEndpoint,
                     Message, ProviderKind, Task, Usage)
 
@@ -22,5 +22,6 @@ def parse_json(text: str) -> dict:
 
 __all__ = [
     "Capability", "ChatRequest", "ChatResponse", "LlmEndpoint", "Message",
-    "ProviderKind", "Task", "Usage", "LlmRouter", "get_router", "parse_json",
+    "ProviderKind", "Task", "Usage", "LlmRouter", "get_router", "reset_router",
+    "parse_json",
 ]

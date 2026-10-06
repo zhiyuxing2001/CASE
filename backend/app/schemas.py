@@ -475,6 +475,19 @@ class AiStatus(BaseModel):
     model: str
 
 
+class AiSettingsOut(BaseModel):
+    configured: bool
+    api_key_masked: str
+    base_url: str
+    model: str
+
+
+class AiSettingsUpdate(BaseModel):
+    api_key: str | None = None
+    base_url: str | None = None
+    model: str | None = None
+
+
 class AiChatRequest(BaseModel):
     question: str
     case_id: int | None = None
