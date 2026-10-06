@@ -19,6 +19,7 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from sqlalchemy.orm import Session  # noqa: E402
+from ulid import ULID  # noqa: E402
 
 from app.db import make_engine  # noqa: E402
 from app.dictionary import resolve_herb  # noqa: E402
@@ -60,6 +61,11 @@ def _record(session: Session, pid: str, *, visit_no: int, father_id: int,
     session.add(record)
     session.flush()
     record.father_id = father_id or record.record_id
+    if father_id:
+        parent = session.get(InfoRecord, father_id)
+        record.course_id = parent.course_id if parent else ""
+    else:
+        record.course_id = str(ULID())
     return record
 
 

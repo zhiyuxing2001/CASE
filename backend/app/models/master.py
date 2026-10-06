@@ -65,6 +65,8 @@ class InfoRecord(SoftDeleteMixin, TimestampsMixin, Base):
 
     record_id = Column(Integer, primary_key=True, autoincrement=True,
                        doc="病历编号")
+    course_id = Column(Text, index=True, nullable=False, default="",
+                       doc="病案编号（病程系列），ULID；同一患者可有多个病案")
     patient_id = Column(Text, ForeignKey("info_patient.patient_id"),
                         nullable=False, doc="患者编号")
     father_id = Column(Integer, nullable=False, index=True,

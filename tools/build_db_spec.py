@@ -109,6 +109,9 @@ TABLES: list[dict] = [
         "fields": [
             ("record_id", "病历编号", "INTEGER", "PRIMARY KEY AUTOINCREMENT",
              "计算机生成：从1开始，以1为步长增序编号"),
+            ("course_id", "病案编号", "TEXT", "NOT NULL DEFAULT ''",
+             "病案编号（病程系列），ULID。同一患者可有多个病案，"
+             "病案标识独立于患者编号，不得复用 patient_id"),
             PATIENT_KEY,
             ("father_id", "父节点病历编号", "INTEGER", "FOREIGN KEY NOT NULL",
              "初诊病历的父节点编号等于其自身病历编号；复诊病历的父节点编号"

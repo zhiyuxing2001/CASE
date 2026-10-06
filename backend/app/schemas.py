@@ -49,7 +49,8 @@ class RecordList(BaseModel):
 
 class CourseSummary(BaseModel):
     """病程系列摘要：一个系列一行（初诊为系列头）。"""
-    course_id: int
+    course_id: str
+    first_record_id: int
     patient_id: str
     patient_name: str
     first_date: date

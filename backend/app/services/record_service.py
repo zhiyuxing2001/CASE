@@ -3,10 +3,11 @@
 写入顺序对 SQLite 外键至关重要：父表（患者、老师）已存在，本服务只负责
 创建就诊及其临床子表。record 行先 flush 以获得 record_id，再写子表。
 
-病程链规则（与 father_id 契约一致）：
-- 初诊（无 parent_record_id）：father_id 指向自身，visit_no = 1
-- 复诊（给定 parent_record_id）：father_id 继承初诊的 father_id，
-  visit_no = 该病程最大 visit_no + 1
+病程链规则（与 course_id / father_id 契约一致）：
+- 初诊（无 parent_record_id）：生成新 course_id（ULID 病案号），
+  father_id 指向自身，visit_no = 1
+- 复诊（给定 parent_record_id）：继承父记录的 course_id 与 father_id，
+  visit_no = 该病案最大 visit_no + 1
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from __future__ import annotations
 from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from ulid import ULID
 
 from .. import schemas
 from ..dictionary import resolve_herb
@@ -34,17 +36,20 @@ def create_record(db: Session, payload: schemas.RecordCreate) -> int:
         if parent is None:
             raise HTTPException(status_code=404, detail="父病案不存在")
         father_id = parent.father_id
+        course_id = parent.course_id
         visit_no = (db.scalar(
             select(func.max(InfoRecord.visit_no)).where(
-                InfoRecord.father_id == father_id
+                InfoRecord.course_id == course_id
             )
         ) or 0) + 1
     else:
         father_id = 0
+        course_id = str(ULID())  # 新病案：独立的病案号
         visit_no = 1
 
     record = InfoRecord(
         patient_id=payload.patient_id,
+        course_id=course_id,
         father_id=father_id,
         visit_no=visit_no,
         visit_type=payload.visit_type,

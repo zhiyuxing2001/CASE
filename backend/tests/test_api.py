@@ -108,6 +108,33 @@ def test_create_record_requires_existing_patient(engine: Engine) -> None:
         _cleanup()
 
 
+def test_same_patient_multiple_courses(engine: Engine) -> None:
+    """同一患者可有多个病案，各病案拥有独立的 course_id。"""
+    client = _make_client(engine)
+    try:
+        pid = client.post("/api/patients", json={
+            "patient_name": "多病案患者", "gender": False,
+            "birthday": "1970-01-01",
+        }).json()["patient_id"]
+
+        client.post("/api/records", json={
+            "patient_id": pid, "clinic_date": "2026-01-01",
+            "narrative": {"complaint": "胃痛"},
+        })
+        client.post("/api/records", json={
+            "patient_id": pid, "clinic_date": "2026-03-01",
+            "narrative": {"complaint": "失眠"},
+        })
+
+        courses = client.get("/api/courses").json()["items"]
+        mine = [c for c in courses if c["patient_name"] == "多病案患者"]
+        assert len(mine) == 2
+        assert mine[0]["course_id"] != mine[1]["course_id"]
+        assert all(c["course_id"] and c["first_record_id"] for c in mine)
+    finally:
+        _cleanup()
+
+
 def test_health_reports_ai_not_configured(engine: Engine) -> None:
     client = _make_client(engine)
     try:

@@ -1,7 +1,8 @@
 """病案病程（系列）列表。
 
 一个「病案」是一段病程：初诊为系列头（father_id 指向自身），后续复诊/
-随诊同属该系列。列表因此按系列聚合，每系列一行，而非每次就诊一行。
+随诊同属该病案（course_id 相同）。列表按 course_id 聚合，每病案一行。
+同一患者可有多个病案，因此病案标识用独立的 course_id，而非 patient_id。
 """
 
 from __future__ import annotations
@@ -19,21 +20,22 @@ router = APIRouter(prefix="/api/courses", tags=["courses"])
 
 _SELECT = """
 SELECT
-  r.record_id   AS course_id,
-  r.patient_id  AS patient_id,
+  r.course_id    AS course_id,
+  r.record_id    AS first_record_id,
+  r.patient_id   AS patient_id,
   p.patient_name AS patient_name,
-  r.clinic_date AS first_date,
-  n.complaint   AS complaint,
-  d.syndrome    AS syndrome,
-  d.tcm_disease AS tcm_disease,
-  m.mentor_name AS mentor_name,
+  r.clinic_date  AS first_date,
+  n.complaint    AS complaint,
+  d.syndrome     AS syndrome,
+  d.tcm_disease  AS tcm_disease,
+  m.mentor_name  AS mentor_name,
   (SELECT COUNT(*) FROM info_record v
-     WHERE v.father_id = r.record_id AND v.is_deleted = 0) AS visit_count,
+     WHERE v.course_id = r.course_id AND v.is_deleted = 0) AS visit_count,
   (SELECT MAX(v.clinic_date) FROM info_record v
-     WHERE v.father_id = r.record_id AND v.is_deleted = 0) AS last_date,
+     WHERE v.course_id = r.course_id AND v.is_deleted = 0) AS last_date,
   EXISTS(SELECT 1 FROM info_record v
            JOIN prescription_item pi ON pi.record_id = v.record_id
-          WHERE v.father_id = r.record_id AND pi.needs_review = 1) AS needs_review
+          WHERE v.course_id = r.course_id AND pi.needs_review = 1) AS needs_review
 FROM info_record r
 JOIN info_patient p ON p.patient_id = r.patient_id
 LEFT JOIN case_narrative n ON n.record_id = r.record_id
@@ -52,7 +54,7 @@ WHERE r.father_id = r.record_id AND r.is_deleted = 0
 """
 
 
-def _as_date(value) -> date:
+def _as_date(value) -> date | None:
     return date.fromisoformat(str(value)) if value is not None else None
 
 
@@ -86,6 +88,7 @@ def list_courses(
     items = [
         schemas.CourseSummary(
             course_id=row.course_id,
+            first_record_id=row.first_record_id,
             patient_id=row.patient_id,
             patient_name=row.patient_name or "",
             first_date=_as_date(row.first_date),
