@@ -128,6 +128,7 @@ export interface RecordDetail {
   record: Record<string, unknown>
   patient: { patient_id: string; patient_name: string; gender: boolean; age: number | null }
   narrative: Record<string, string>
+  first_narrative: Record<string, string>
   diagnosis: Record<string, string | null>
   treatment: Record<string, string | number | null>
   herbs: HerbItem[]

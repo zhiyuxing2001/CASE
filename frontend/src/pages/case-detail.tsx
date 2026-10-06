@@ -171,9 +171,18 @@ export function CaseDetail() {
       <Section title="病案">
         <KV label="主诉" value={data.narrative.complaint} />
         <KV label="现病史" value={data.narrative.present_illness} />
-        <KV label="既往史" value={data.narrative.past_history} />
-        <KV label="个人史及婚育史" value={data.narrative.personal_history} />
-        <KV label="过敏史" value={data.narrative.allergy_history} />
+        <KV
+          label="既往史"
+          value={data.narrative.past_history || data.first_narrative?.past_history}
+        />
+        <KV
+          label="个人史及婚育史"
+          value={data.narrative.personal_history || data.first_narrative?.personal_history}
+        />
+        <KV
+          label="过敏史"
+          value={data.narrative.allergy_history || data.first_narrative?.allergy_history}
+        />
         <div className="flex flex-wrap gap-x-8 py-2">
           <span className="text-sm">
             <span className="mr-2 text-muted-foreground">舌质</span>
@@ -246,6 +255,7 @@ export function CaseDetail() {
             </div>
           </div>
         )}
+        <KV label="西药" value={data.treatment.western_medicine as string} />
         <KV label="医嘱与调护" value={data.treatment.advice as string} />
         <KV label="其他治疗" value={data.treatment.other_treatment as string} />
       </Section>

@@ -98,7 +98,7 @@ export function CaseEntry() {
   // 治疗
   const [treatment, setTreatment] = useState({
     treatment_principle: "", formula_name: "", dose_count: "",
-    decoction: "", usage: "", advice: "", other_treatment: "",
+    decoction: "", usage: "", advice: "", western_medicine: "", other_treatment: "",
   })
 
   const [herbs, setHerbs] = useState<HerbRow[]>([{ ...EMPTY_HERB }])
@@ -147,6 +147,7 @@ export function CaseEntry() {
           usage: treatment.usage,
           advice: treatment.advice,
           other_treatment: treatment.other_treatment,
+          western_medicine: treatment.western_medicine,
         },
         herbs: herbs
           .filter((h) => h.herb_name.trim())
@@ -504,7 +505,12 @@ export function CaseEntry() {
             <Textarea value={treatment.advice} rows={2}
               onChange={(e) => setTreatment({ ...treatment, advice: e.target.value })} />
           </Field>
-          <Field label="其他治疗">
+          <Field label="西药" hint="如 甲钴胺 0.5mg tid，与中药分开记录">
+            <Textarea value={treatment.western_medicine} rows={2}
+              onChange={(e) => setTreatment({ ...treatment, western_medicine: e.target.value })}
+              placeholder="如 甲钴胺 0.5mg tid" />
+          </Field>
+          <Field label="其他治疗" hint="中成药、针灸、外治等">
             <Textarea value={treatment.other_treatment} rows={2}
               onChange={(e) => setTreatment({ ...treatment, other_treatment: e.target.value })} />
           </Field>
