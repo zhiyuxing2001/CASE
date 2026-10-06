@@ -577,3 +577,11 @@ class TongueDist(BaseModel):
     body: list[FreqItem]
     coating: list[FreqItem]
     pulse: list[FreqItem]
+
+
+class CourseBatchRequest(BaseModel):
+    course_ids: list[str]
+
+
+class CourseBatchResult(BaseModel):
+    deleted: int

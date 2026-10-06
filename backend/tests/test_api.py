@@ -143,3 +143,36 @@ def test_health_reports_ai_not_configured(engine: Engine) -> None:
         assert health["ai_configured"] in (True, False)
     finally:
         _cleanup()
+
+
+def test_delete_and_export_courses(engine: Engine) -> None:
+    client = _make_client(engine)
+    try:
+        pid = client.post("/api/patients", json={
+            "patient_name": "导出患者", "gender": True, "birthday": "1970-01-01",
+        }).json()["patient_id"]
+        client.post("/api/records", json={
+            "patient_id": pid, "clinic_date": "2026-01-01",
+            "narrative": {"complaint": "测试"},
+        })
+        mine = [c for c in client.get("/api/courses").json()["items"]
+                if c["patient_name"] == "导出患者"]
+        assert len(mine) == 1
+        cid = mine[0]["course_id"]
+
+        # 导出 Excel
+        r = client.post("/api/courses/export", json={"course_ids": [cid]})
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml")
+
+        # 删除（软删除）
+        r = client.post("/api/courses/delete", json={"course_ids": [cid]})
+        assert r.status_code == 200
+        assert r.json()["deleted"] >= 1
+
+        # 列表不再包含该病案
+        remaining = client.get("/api/courses").json()["items"]
+        assert all(c["course_id"] != cid for c in remaining)
+    finally:
+        _cleanup()
