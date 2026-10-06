@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 import { Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 
 import {
@@ -9,6 +9,7 @@ import {
   createRecord,
   fetchHerbs,
   fetchMentors,
+  fetchPatient,
   fetchPatients,
   fetchSyndromes,
   fetchTerms,
@@ -61,6 +62,10 @@ function Field({
 
 export function CaseEntry() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const parentRecordId = searchParams.get("parent_record_id")
+  const fixedPatientId = searchParams.get("patient_id")
+  const isFollowUp = Boolean(parentRecordId && fixedPatientId)
 
   // 患者
   const [patientMode, setPatientMode] = useState<"existing" | "new">("new")
@@ -70,7 +75,7 @@ export function CaseEntry() {
   // 就诊
   const [visit, setVisit] = useState({
     clinic_date: new Date().toISOString().slice(0, 10),
-    visit_type: "0",
+    visit_type: isFollowUp ? "1" : "0",
     mentor_id: "",
     department: "",
     age: "",
@@ -99,11 +104,16 @@ export function CaseEntry() {
   const [herbs, setHerbs] = useState<HerbRow[]>([{ ...EMPTY_HERB }])
 
   const { data: mentors = [] } = useQuery({ queryKey: ["mentors"], queryFn: fetchMentors })
+  const { data: followUpPatient } = useQuery({
+    queryKey: ["patient", fixedPatientId],
+    queryFn: () => fetchPatient(fixedPatientId!),
+    enabled: isFollowUp,
+  })
 
   const mutation = useMutation({
     mutationFn: async () => {
-      let patientId = selectedPatient?.patient_id
-      if (patientMode === "new") {
+      let patientId = isFollowUp ? fixedPatientId : selectedPatient?.patient_id
+      if (patientMode === "new" && !isFollowUp) {
         if (!newPatient.name.trim() || !newPatient.birthday) {
           throw new Error("请填写患者姓名与出生日期")
         }
@@ -126,6 +136,7 @@ export function CaseEntry() {
         mentor_id: visit.mentor_id || null,
         department: visit.department,
         addr: visit.addr,
+        parent_record_id: isFollowUp ? Number(parentRecordId) : null,
         narrative,
         diagnosis,
         treatment: {
@@ -191,7 +202,9 @@ export function CaseEntry() {
     <div className="mx-auto max-w-4xl space-y-4 p-8 pb-24">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">录入新病案</h2>
+          <h2 className="text-xl font-semibold tracking-tight">
+            {isFollowUp ? "添加随诊" : "录入新病案"}
+          </h2>
           <p className="text-sm text-muted-foreground">自由书写，结构化字段仅用于检索与统计。</p>
         </div>
       </div>
@@ -202,60 +215,72 @@ export function CaseEntry() {
           <CardTitle className="text-base">患者</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <div className="flex gap-2">
-            <Button
-              variant={patientMode === "new" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPatientMode("new")}
-            >
-              新建患者
-            </Button>
-            <Button
-              variant={patientMode === "existing" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPatientMode("existing")}
-            >
-              已有患者
-            </Button>
-          </div>
-
-          {patientMode === "new" ? (
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="姓名" required>
-                <Input
-                  value={newPatient.name}
-                  onChange={(e) => setNewPatient({ ...newPatient, name: e.target.value })}
-                />
-              </Field>
-              <Field label="性别">
-                <Select
-                  value={newPatient.gender ? "1" : "0"}
-                  onValueChange={(v) => setNewPatient({ ...newPatient, gender: v === "1" })}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">女</SelectItem>
-                    <SelectItem value="1">男</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="出生日期" required>
-                <Input
-                  type="date"
-                  value={newPatient.birthday}
-                  onChange={(e) => setNewPatient({ ...newPatient, birthday: e.target.value })}
-                />
-              </Field>
+          {isFollowUp ? (
+            <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2 text-sm">
+              <span className="text-muted-foreground">随诊对象</span>
+              <span className="font-medium">{followUpPatient?.patient_name ?? "患者"}</span>
+              <span className="text-muted-foreground">
+                （{followUpPatient?.gender ? "男" : "女"}）
+              </span>
             </div>
           ) : (
-            <Field label="选择患者">
-              <FreeTextCombobox
-                value={selectedPatient?.patient_name ?? ""}
-                onValueChange={onPatientPick}
-                load={patientLoad}
-                placeholder="输入姓名检索已有患者…"
-              />
-            </Field>
+            <>
+              <div className="flex gap-2">
+                <Button
+                  variant={patientMode === "new" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPatientMode("new")}
+                >
+                  新建患者
+                </Button>
+                <Button
+                  variant={patientMode === "existing" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPatientMode("existing")}
+                >
+                  已有患者
+                </Button>
+              </div>
+
+              {patientMode === "new" ? (
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <Field label="姓名" required>
+                    <Input
+                      value={newPatient.name}
+                      onChange={(e) => setNewPatient({ ...newPatient, name: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="性别">
+                    <Select
+                      value={newPatient.gender ? "1" : "0"}
+                      onValueChange={(v) => setNewPatient({ ...newPatient, gender: v === "1" })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">女</SelectItem>
+                        <SelectItem value="1">男</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field label="出生日期" required>
+                    <Input
+                      type="date"
+                      value={newPatient.birthday}
+                      onChange={(e) => setNewPatient({ ...newPatient, birthday: e.target.value })}
+                    />
+                  </Field>
+                </div>
+              ) : (
+                <Field label="选择患者">
+                  <FreeTextCombobox
+                    value={selectedPatient?.patient_name ?? ""}
+                    onValueChange={onPatientPick}
+                    load={patientLoad}
+                    placeholder="输入姓名检索已有患者…"
+                  />
+                </Field>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

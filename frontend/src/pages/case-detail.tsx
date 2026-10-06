@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, History } from "lucide-react"
+import { ArrowLeft, History, Plus } from "lucide-react"
 import { useParams, Link } from "react-router-dom"
 
 import { fetchRecord, fetchRecordHistory } from "@/api/cases"
@@ -92,6 +92,13 @@ export function CaseDetail() {
           {herbs.some((h) => h.needs_review) && (
             <Badge variant="warning">有待校对药味</Badge>
           )}
+          <Button size="sm" asChild>
+            <Link
+              to={`/cases/new?patient_id=${encodeURIComponent(String(record.patient_id ?? ""))}&parent_record_id=${record.father_id}`}
+            >
+              <Plus className="h-4 w-4" /> 添加随诊
+            </Link>
+          </Button>
         </div>
       </div>
 

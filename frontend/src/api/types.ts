@@ -29,6 +29,27 @@ export interface RecordList {
   items: RecordSummary[]
 }
 
+export interface CourseSummary {
+  course_id: number
+  patient_id: string
+  patient_name: string
+  first_date: string
+  last_date: string
+  visit_count: number
+  complaint: string
+  syndrome: string
+  tcm_disease: string
+  mentor_name: string
+  needs_review: boolean
+}
+
+export interface CourseList {
+  total: number
+  page: number
+  page_size: number
+  items: CourseSummary[]
+}
+
 export interface MentorOption {
   mentor_id: string
   mentor_name: string

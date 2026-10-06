@@ -1,6 +1,7 @@
 import { getJSON, postJSON } from "@/lib/api"
 import type {
   AuditEntry,
+  CourseList,
   FormulaOption,
   HerbOption,
   HerbResolution,
@@ -39,6 +40,10 @@ function qs(params: Record<string, string | number | undefined>): string {
 
 export function fetchRecords(query: RecordQuery = {}): Promise<RecordList> {
   return getJSON<RecordList>(`/api/records${qs(query as Record<string, string | number | undefined>)}`)
+}
+
+export function fetchCourses(query: RecordQuery = {}): Promise<CourseList> {
+  return getJSON<CourseList>(`/api/courses${qs(query as Record<string, string | number | undefined>)}`)
 }
 
 export function fetchRecord(recordId: number): Promise<RecordDetail> {
@@ -127,4 +132,8 @@ export function createRecord(
 
 export function fetchPatients(q = ""): Promise<PatientOption[]> {
   return getJSON<PatientOption[]>(`/api/patients${qs({ q })}`)
+}
+
+export function fetchPatient(id: string): Promise<PatientOption> {
+  return getJSON<PatientOption>(`/api/patients/${id}`)
 }
