@@ -163,3 +163,21 @@ export async function exportCourses(courseIds: string[]): Promise<void> {
   a.remove()
   URL.revokeObjectURL(url)
 }
+
+export async function downloadCaseReport(courseId: string): Promise<void> {
+  const res = await fetch(`/api/courses/${courseId}/report`)
+  if (!res.ok) {
+    throw new Error(`导出失败 (${res.status})`)
+  }
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  const cd = res.headers.get("Content-Disposition") ?? ""
+  const match = /filename="?([^"]+)"?/.exec(cd)
+  a.download = match?.[1] ?? "case-report.docx"
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}

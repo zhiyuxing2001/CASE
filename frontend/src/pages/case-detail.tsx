@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, History, Plus } from "lucide-react"
+import { ArrowLeft, FileDown, History, Plus } from "lucide-react"
 import { useParams, Link } from "react-router-dom"
+import { toast } from "sonner"
 
-import { fetchRecord, fetchRecordHistory } from "@/api/cases"
+import { downloadCaseReport, fetchRecord, fetchRecordHistory } from "@/api/cases"
 import type { AuditEntry } from "@/api/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -75,6 +76,20 @@ export function CaseDetail() {
   const record = data.record as Record<string, unknown>
   const herbs = data.herbs
 
+  async function handleReport() {
+    const courseId = String(record.course_id ?? "")
+    if (!courseId) {
+      toast.error("病案缺少 course_id，无法导出")
+      return
+    }
+    try {
+      await downloadCaseReport(courseId)
+      toast.success("已导出 Word 报告")
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "导出失败")
+    }
+  }
+
   return (
     <div className="mx-auto max-w-5xl space-y-4 p-8">
       {/* 顶部 */}
@@ -92,6 +107,9 @@ export function CaseDetail() {
           {herbs.some((h) => h.needs_review) && (
             <Badge variant="warning">有待校对药味</Badge>
           )}
+          <Button size="sm" variant="outline" onClick={handleReport}>
+            <FileDown className="h-4 w-4" /> 病案导出
+          </Button>
           <Button size="sm" asChild>
             <Link
               to={`/cases/new?patient_id=${encodeURIComponent(String(record.patient_id ?? ""))}&parent_record_id=${record.father_id}`}
