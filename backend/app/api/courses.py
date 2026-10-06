@@ -193,15 +193,21 @@ def export_courses(
     if record_ids:
         herb_rows = db.execute(
             text(f"""
-                SELECT record_id, herb_name_norm, dose, unit
+                SELECT record_id, herb_name_norm, dose, unit, decoction_note
                   FROM prescription_item
                  WHERE record_id IN ({_in_placeholders([str(r) for r in record_ids], 300)})
                  ORDER BY sequence
             """),
             _in_params([str(r) for r in record_ids], 300),
         ).all()
-        for rid, name, dose, unit in herb_rows:
-            piece = f"{name} {dose}{unit}" if dose is not None else str(name)
+        for rid, name, dose, unit, note in herb_rows:
+            if dose is not None:
+                dose_str = str(int(dose)) if float(dose).is_integer() else str(dose)
+                piece = f"{name} {dose_str}{unit}"
+            else:
+                piece = str(name)
+            if note:
+                piece += note  # 特殊煎服法，Excel 无上标，直接拼接
             herbs_by_record.setdefault(int(rid), []).append(piece)
 
     for row in detail_rows:

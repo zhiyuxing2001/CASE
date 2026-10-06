@@ -37,6 +37,31 @@ def _add_kv(doc: Document, label: str, value) -> None:
     _style_run(p.add_run(str(value)))
 
 
+def _fmt_dose(dose) -> str:
+    if dose is None:
+        return ""
+    if float(dose).is_integer():
+        return str(int(dose))
+    return str(dose)
+
+
+def _add_prescription(doc: Document, herbs) -> None:
+    """处方笺：每行四味药，药名+剂量，特殊煎服法写为上角标。"""
+    table = doc.add_table(rows=0, cols=4)
+    table.style = "Table Grid"
+    cells = None
+    for i, h in enumerate(herbs):
+        if i % 4 == 0:
+            cells = table.add_row().cells
+        p = cells[i % 4].paragraphs[0]
+        name = h.herb_name_norm or h.herb_name
+        _style_run(p.add_run(name + _fmt_dose(h.dose) + (h.unit or "g")))
+        if h.decoction_note:
+            sup = p.add_run(h.decoction_note)
+            _style_run(sup)
+            sup.font.superscript = True
+
+
 def _md_to_plain(markdown: str) -> list[str]:
     lines: list[str] = []
     for line in markdown.splitlines():
@@ -148,17 +173,7 @@ def generate_case_report(db: Session, course_id: str) -> BytesIO | None:
             _add_kv(doc, "用法：", t.usage)
 
         if herbs:
-            table = doc.add_table(rows=1, cols=5)
-            table.style = "Table Grid"
-            for i, h in enumerate(["序号", "药名", "剂量", "炮制", "煎煮要求"]):
-                _style_run(table.rows[0].cells[i].paragraphs[0].add_run(h), bold=True)
-            for idx, h in enumerate(herbs):
-                row = table.add_row().cells
-                name = h.herb_name_norm or h.herb_name
-                dose = f"{h.dose}{h.unit}" if h.dose is not None else ""
-                for i, v in enumerate([str(idx + 1), name, dose,
-                                       h.processing, h.decoction_note]):
-                    _style_run(row[i].paragraphs[0].add_run(v or ""))
+            _add_prescription(doc, herbs)
 
         if t is not None:
             _add_kv(doc, "医嘱：", t.advice)
