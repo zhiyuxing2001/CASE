@@ -30,7 +30,8 @@ export interface RecordList {
 }
 
 export interface CourseSummary {
-  course_id: number
+  course_id: string
+  first_record_id: number
   patient_id: string
   patient_name: string
   first_date: string

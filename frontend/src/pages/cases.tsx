@@ -152,7 +152,7 @@ export function Cases() {
                   <TableRow
                     key={row.course_id}
                     className="cursor-pointer"
-                    onClick={() => navigate(`/cases/${row.course_id}`)}
+                    onClick={() => navigate(`/cases/${row.first_record_id}`)}
                   >
                     <TableCell className="font-medium">{row.patient_name}</TableCell>
                     <TableCell className="max-w-[260px] truncate">{row.complaint || "—"}</TableCell>
