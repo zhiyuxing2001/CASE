@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from ulid import ULID
@@ -46,6 +46,20 @@ def list_patients(
                               gender=bool(p.gender))
         for p in rows
     ]
+
+
+@router.get("/patients/{patient_id}", response_model=schemas.PatientBrief)
+def get_patient(patient_id: str,
+                db: Session = Depends(get_db)) -> schemas.PatientBrief:
+    patient = db.scalar(select(InfoPatient).where(
+        InfoPatient.patient_id == patient_id))
+    if patient is None:
+        raise HTTPException(status_code=404, detail="患者不存在")
+    return schemas.PatientBrief(
+        patient_id=patient.patient_id,
+        patient_name=patient.patient_name,
+        gender=bool(patient.gender),
+    )
 
 
 @router.post("/patients", response_model=schemas.PatientCreated,

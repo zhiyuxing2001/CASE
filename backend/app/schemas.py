@@ -47,6 +47,28 @@ class RecordList(BaseModel):
     items: list[RecordSummary]
 
 
+class CourseSummary(BaseModel):
+    """病程系列摘要：一个系列一行（初诊为系列头）。"""
+    course_id: int
+    patient_id: str
+    patient_name: str
+    first_date: date
+    last_date: date
+    visit_count: int
+    complaint: str
+    syndrome: str
+    tcm_disease: str
+    mentor_name: str
+    needs_review: bool
+
+
+class CourseList(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    items: list[CourseSummary]
+
+
 class HerbItem(BaseModel):
     sequence: int
     herb_name: str

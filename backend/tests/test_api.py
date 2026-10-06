@@ -81,6 +81,13 @@ def test_create_patient_and_full_record(engine: Engine) -> None:
         assert [v["visit_no"] for v in course] == [1, 2]
         assert all(v["record_id"] for v in course)
 
+        # 病程列表：一个系列一行，而非每次就诊一行
+        courses = client.get("/api/courses").json()
+        mine = [c for c in courses["items"] if c["patient_name"] == "接口测试患者"]
+        assert len(mine) == 1
+        assert mine[0]["visit_count"] == 2
+        assert mine[0]["complaint"] == "腹胀纳呆2周"  # 初诊主诉，而非“服药后复诊”
+
         # 修改历史：API 写入经审计会话，应产生字段级留痕
         history = client.get(f"/api/records/{rid}/history").json()
         assert any(e["table_name"] == "info_record" for e in history)
