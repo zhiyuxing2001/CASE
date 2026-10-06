@@ -182,3 +182,33 @@ def test_delete_and_export_courses(engine: Engine) -> None:
         assert all(c["course_id"] != cid for c in remaining)
     finally:
         _cleanup()
+
+
+def test_western_medicine_and_first_narrative(engine: Engine) -> None:
+    """西药单列；复诊详情回填初诊的既往史/个人史/过敏史。"""
+    client = _make_client(engine)
+    try:
+        pid = client.post("/api/patients", json={
+            "patient_name": "西药患者", "gender": True, "birthday": "1970-01-01",
+        }).json()["patient_id"]
+        r1 = client.post("/api/records", json={
+            "patient_id": pid, "clinic_date": "2026-01-01",
+            "narrative": {"complaint": "首诊", "past_history": "高血压病史",
+                          "personal_history": "吸烟"},
+            "treatment": {"treatment_principle": "清热祛湿",
+                          "western_medicine": "甲钴胺 0.5mg tid"},
+        }).json()
+        r2 = client.post("/api/records", json={
+            "patient_id": pid, "clinic_date": "2026-01-15", "visit_type": 1,
+            "parent_record_id": r1["record_id"],
+            "narrative": {"complaint": "复诊"},
+        }).json()
+
+        detail1 = client.get(f"/api/records/{r1['record_id']}").json()
+        assert detail1["treatment"]["western_medicine"] == "甲钴胺 0.5mg tid"
+
+        detail2 = client.get(f"/api/records/{r2['record_id']}").json()
+        assert detail2["first_narrative"]["past_history"] == "高血压病史"
+        assert detail2["first_narrative"]["personal_history"] == "吸烟"
+    finally:
+        _cleanup()

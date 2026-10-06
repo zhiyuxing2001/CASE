@@ -89,7 +89,8 @@ def create_record(db: Session, payload: schemas.RecordCreate) -> int:
         record_id=record.record_id, patient_id=payload.patient_id,
         treatment_principle=t.treatment_principle, formula_name=t.formula_name,
         formula_id=t.formula_id, dose_count=t.dose_count, decoction=t.decoction,
-        usage=t.usage, advice=t.advice, other_treatment=t.other_treatment,
+        usage=t.usage, advice=t.advice, western_medicine=t.western_medicine,
+        other_treatment=t.other_treatment,
     ))
 
     for herb in payload.herbs:

@@ -181,6 +181,10 @@ def get_record(record_id: int, db: Session = Depends(get_db)) -> schemas.RecordD
         value = getattr(obj, key, None)
         return value.isoformat() if value is not None else None
 
+    # 首诊病案文本：既往史、个人史、过敏史等“只记一次”的字段取自首诊
+    first_record = course[0] if course else record
+    first_narrative = db.get(CaseNarrative, first_record.record_id)
+
     return schemas.RecordDetail(
         record={**_row(record), "clinic_date": _iso(record, "clinic_date")},
         patient=schemas.PatientBrief(
@@ -191,6 +195,10 @@ def get_record(record_id: int, db: Session = Depends(get_db)) -> schemas.RecordD
         ),
         narrative={} if narrative is None else {
             c.name: getattr(narrative, c.name) for c in narrative.__table__.columns
+        },
+        first_narrative={} if first_narrative is None else {
+            c.name: getattr(first_narrative, c.name)
+            for c in first_narrative.__table__.columns
         },
         diagnosis={} if diagnosis is None else {
             c.name: getattr(diagnosis, c.name) for c in diagnosis.__table__.columns

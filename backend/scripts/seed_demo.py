@@ -118,6 +118,7 @@ def seed(engine) -> None:
                 treatment_principle="清热祛湿，理气活血止痛",
                 formula_name="", dose_count=14, decoction="机械煎药（含2袋）",
                 usage="每天一次（10点）",
+                western_medicine="甲钴胺 0.5mg tid；加巴喷丁 0.3g tid",
             ))
             _herbs(session, record.record_id, "P-DEMO-A", PRESCRIPTION_A)
 

@@ -146,9 +146,11 @@ def generate_case_report(db: Session, course_id: str) -> BytesIO | None:
         if n is not None:
             _add_kv(doc, "主诉：", n.complaint)
             _add_kv(doc, "现病史：", n.present_illness)
-            _add_kv(doc, "既往史：", n.past_history)
-            _add_kv(doc, "个人史及婚育史：", n.personal_history)
-            _add_kv(doc, "过敏史：", n.allergy_history)
+            if rec.visit_no == 1:
+                # 既往史、个人史、过敏史“只记一次”，仅首诊展示
+                _add_kv(doc, "既往史：", n.past_history)
+                _add_kv(doc, "个人史及婚育史：", n.personal_history)
+                _add_kv(doc, "过敏史：", n.allergy_history)
             tongue = "，".join(x for x in (n.body_of_tongue, n.fur_of_tongue) if x)
             _add_kv(doc, "舌象：", tongue)
             _add_kv(doc, "脉象：", n.pulse)
@@ -176,6 +178,7 @@ def generate_case_report(db: Session, course_id: str) -> BytesIO | None:
             _add_prescription(doc, herbs)
 
         if t is not None:
+            _add_kv(doc, "西药：", t.western_medicine)
             _add_kv(doc, "医嘱：", t.advice)
             _add_kv(doc, "其他治疗：", t.other_treatment)
 

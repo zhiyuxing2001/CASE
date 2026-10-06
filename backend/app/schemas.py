@@ -87,6 +87,7 @@ class RecordDetail(BaseModel):
     record: dict[str, Any]
     patient: PatientBrief
     narrative: dict[str, Any]
+    first_narrative: dict[str, Any]
     diagnosis: dict[str, Any]
     treatment: dict[str, Any]
     herbs: list[HerbItem]
@@ -209,6 +210,7 @@ class TreatmentCreate(BaseModel):
     decoction: str = ""
     usage: str = ""
     advice: str = ""
+    western_medicine: str = ""
     other_treatment: str = ""
 
 

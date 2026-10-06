@@ -112,8 +112,10 @@ class Treatment(TimestampsMixin, Base):
     usage = Column(Text, nullable=False, default="", doc="用法")
     advice = Column(Text, nullable=False, default="",
                     doc="医嘱与调护，含饮食起居调摄与复诊安排")
+    western_medicine = Column(Text, nullable=False, default="",
+                              doc="西药，自由文本，如“甲钴胺 0.5mg tid”")
     other_treatment = Column(Text, nullable=False, default="",
-                             doc="其他治疗：中成药、西医治疗、针灸外治等")
+                             doc="其他治疗：中成药、针灸外治等（西药另列于西药栏）")
     raw_ocr_text = Column(Text, nullable=False, default="",
                           doc="处方原文，只写不改，用于溯源")
 
