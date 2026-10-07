@@ -1,11 +1,12 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { ArrowLeft, Eye, MessageSquare, PencilLine, Save } from "lucide-react"
-import { useEffect, useState } from "react"
+import { ArrowLeft, Eye, MessageSquare, PencilLine, Save, Send, Sparkles } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import remarkGfm from "remark-gfm"
 import { toast } from "sonner"
 
+import { askQuestion, draftNote, type AiSource } from "@/api/ai"
 import { fetchMentors, fetchRecords } from "@/api/cases"
 import {
   addComment,
@@ -38,6 +39,7 @@ export function NoteEditor() {
   const [recordLabel, setRecordLabel] = useState("")
   const [mode, setMode] = useState<"edit" | "preview">("edit")
   const [comment, setComment] = useState("")
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const { data: mentors = [] } = useQuery({ queryKey: ["mentors"], queryFn: fetchMentors })
   const { data: detail } = useQuery({
@@ -104,6 +106,24 @@ export function NoteEditor() {
     if (o) {
       setRecordId(Number(o.value))
       setRecordLabel(o.label)
+    }
+  }
+
+  // 把 AI 回复插入正文：优先插入到光标处，否则追加
+  function insertText(text: string) {
+    const el = textareaRef.current
+    if (el) {
+      const start = el.selectionStart ?? content.length
+      const end = el.selectionEnd ?? content.length
+      const next = content.slice(0, start) + text + content.slice(end)
+      setContent(next)
+      requestAnimationFrame(() => {
+        el.focus()
+        const pos = start + text.length
+        el.selectionStart = el.selectionEnd = pos
+      })
+    } else {
+      setContent((c) => (c ? `${c}\n\n${text}` : text))
     }
   }
 
@@ -181,7 +201,7 @@ export function NoteEditor() {
         </CardContent>
       </Card>
 
-      {/* 编辑器 / 预览 */}
+      {/* 编辑器 + AI 助手 */}
       <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base">正文（Markdown）</CardTitle>
@@ -196,9 +216,10 @@ export function NoteEditor() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="grid gap-4 lg:grid-cols-2">
           {mode === "edit" ? (
             <Textarea
+              ref={textareaRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={18}
@@ -214,6 +235,7 @@ export function NoteEditor() {
               )}
             </div>
           )}
+          <AiChatPanel onInsert={insertText} topic={title} recordId={recordId} />
         </CardContent>
       </Card>
 
@@ -257,6 +279,163 @@ export function NoteEditor() {
           </CardContent>
         </Card>
       )}
+    </div>
+  )
+}
+
+interface ChatMsg {
+  role: "user" | "assistant"
+  content: string
+  sources?: AiSource[]
+  degraded?: boolean
+}
+
+function AiChatPanel({
+  onInsert,
+  topic,
+  recordId,
+}: {
+  onInsert: (text: string) => void
+  topic: string
+  recordId: number | null
+}) {
+  const [messages, setMessages] = useState<ChatMsg[]>([])
+  const [input, setInput] = useState("")
+  const [busy, setBusy] = useState(false)
+
+  async function ask() {
+    const q = input.trim()
+    if (!q || busy) return
+    setInput("")
+    setMessages((m) => [...m, { role: "user", content: q }])
+    setBusy(true)
+    try {
+      const res = await askQuestion(q)
+      setMessages((m) => [...m, {
+        role: "assistant", content: res.answer,
+        sources: res.sources, degraded: res.degraded,
+      }])
+    } catch {
+      setMessages((m) => [...m, { role: "assistant", content: "", degraded: true }])
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function draft() {
+    if (busy) return
+    setBusy(true)
+    try {
+      const res = await draftNote(topic || "学习心得", recordId)
+      setMessages((m) => [...m, { role: "assistant", content: res.text, degraded: res.degraded }])
+    } catch {
+      setMessages((m) => [...m, { role: "assistant", content: "", degraded: true }])
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function insertSelected() {
+    const sel = window.getSelection()?.toString()
+    if (sel && sel.trim()) onInsert(sel)
+    else toast.info("请先在 AI 回复中选中要插入的文字")
+  }
+
+  return (
+    <div className="flex h-[26rem] flex-col rounded-lg border">
+      <div className="flex items-center justify-between border-b px-3 py-2">
+        <span className="flex items-center gap-1.5 text-sm font-medium">
+          <Sparkles className="h-4 w-4 text-ai" /> AI 助手
+        </span>
+        <Button size="sm" variant="outline" onClick={draft} disabled={busy}>
+          撰写草稿
+        </Button>
+      </div>
+      <div className="flex-1 space-y-3 overflow-y-auto p-3">
+        {messages.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            向 AI 提问查阅资料，或点「撰写草稿」生成一段初稿，再把回复插入正文。
+          </p>
+        )}
+        {messages.map((m, i) => (
+          <ChatBubble key={i} m={m} onInsert={onInsert} onInsertSelected={insertSelected} />
+        ))}
+        {busy && <p className="text-xs text-muted-foreground">思考中…</p>}
+      </div>
+      <div className="flex gap-2 border-t p-2">
+        <Input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void ask()
+          }}
+          placeholder="提问，如：湿热瘀阻证常用哪些药？"
+        />
+        <Button size="sm" onClick={() => void ask()} disabled={busy || !input.trim()}>
+          <Send className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function ChatBubble({
+  m,
+  onInsert,
+  onInsertSelected,
+}: {
+  m: ChatMsg
+  onInsert: (text: string) => void
+  onInsertSelected: () => void
+}) {
+  if (m.role === "user") {
+    return (
+      <div className="flex justify-end">
+        <div className="rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground">
+          {m.content}
+        </div>
+      </div>
+    )
+  }
+  if (!m.content) {
+    return (
+      <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+        <p className="text-muted-foreground">AI 未配置（缺少 API Key），无法生成回复。</p>
+        {m.sources && m.sources.length > 0 && <SourcesList sources={m.sources} />}
+      </div>
+    )
+  }
+  return (
+    <div className="rounded-lg border bg-muted/40 p-3">
+      <div className="prose-sm max-w-none">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+      </div>
+      <div className="mt-2 flex gap-2">
+        <Button size="sm" variant="outline" onClick={() => onInsert(m.content)}>
+          插入全文
+        </Button>
+        <Button size="sm" variant="outline" onClick={onInsertSelected}>
+          插入所选
+        </Button>
+      </div>
+      {m.sources && m.sources.length > 0 && <SourcesList sources={m.sources} />}
+    </div>
+  )
+}
+
+function SourcesList({ sources }: { sources: AiSource[] }) {
+  return (
+    <div className="mt-2 space-y-1">
+      <p className="text-xs text-muted-foreground">相关病案：</p>
+      {sources.map((s) => (
+        <Link
+          key={s.record_id}
+          to={`/cases/${s.record_id}`}
+          className="block truncate text-xs text-primary underline underline-offset-2"
+        >
+          {s.patient_name} · {s.clinic_date} · {s.syndrome || s.complaint}
+        </Link>
+      ))}
     </div>
   )
 }
