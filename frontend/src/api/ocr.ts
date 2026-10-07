@@ -83,8 +83,13 @@ export function fetchOcrJob(jobId: string): Promise<OcrJobOut> {
   return getJSON<OcrJobOut>(`/api/ocr/jobs/${jobId}`)
 }
 
-export function structureOcrJob(jobId: string): Promise<StructureResult> {
-  return postJSON<StructureResult>(`/api/ocr/jobs/${jobId}/structure`, {})
+export function structureOcrJob(jobId: string, templateId?: string | null): Promise<StructureResult> {
+  const qs = templateId ? `?template_id=${encodeURIComponent(templateId)}` : ""
+  return postJSON<StructureResult>(`/api/ocr/jobs/${jobId}/structure${qs}`, {})
+}
+
+export function extractOcrJob(jobId: string, templateId: string): Promise<StructureResult> {
+  return postJSON<StructureResult>(`/api/ocr/jobs/${jobId}/extract`, { template_id: templateId })
 }
 
 export function commitOcrJob(

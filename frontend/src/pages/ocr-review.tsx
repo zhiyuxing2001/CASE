@@ -6,12 +6,14 @@ import { toast } from "sonner"
 
 import {
   commitOcrJob,
+  extractOcrJob,
   fetchOcrJob,
   structureOcrJob,
   type OcrCommitPayload,
   type OcrHerb,
   type OcrStructured,
 } from "@/api/ocr"
+import { fetchTemplates } from "@/api/templates"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -48,14 +50,19 @@ export function OcrReview() {
   const [birthday, setBirthday] = useState("")
   const [clinicDate, setClinicDate] = useState(new Date().toISOString().slice(0, 10))
   const [structured, setStructured] = useState<OcrStructured>(emptyStructured)
+  const [templateId, setTemplateId] = useState("")
 
   const { data: job, isLoading, isError } = useQuery({
     queryKey: ["ocr-job", jobId],
     queryFn: () => fetchOcrJob(jobId),
   })
+  const { data: templates = [] } = useQuery({
+    queryKey: ["templates"],
+    queryFn: fetchTemplates,
+  })
 
   const structure = useMutation({
-    mutationFn: () => structureOcrJob(jobId),
+    mutationFn: () => structureOcrJob(jobId, templateId || null),
     onSuccess: (res) => {
       if (res.degraded || !res.ai_configured) {
         toast.warning("AI 未配置（缺少 API Key），无法结构化")
@@ -63,6 +70,15 @@ export function OcrReview() {
       }
       setStructured(res.structured)
       toast.success(`已结构化 · ${res.model} · prompt ${res.prompt_version}`)
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const extract = useMutation({
+    mutationFn: () => extractOcrJob(jobId, templateId),
+    onSuccess: (res) => {
+      setStructured(res.structured)
+      toast.success("已按模板提取，请校对后入库")
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -196,17 +212,44 @@ export function OcrReview() {
               )}
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button
-                variant="outline"
-                onClick={() => structure.mutate()}
-                disabled={structure.isPending || job.degraded_mode === 1}
-              >
-                {structure.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                结构化识别（通道 B）
-              </Button>
+              <div className="space-y-1.5">
+                <Label>界面模板</Label>
+                <Select value={templateId || "__none__"} onValueChange={(v) => setTemplateId(v === "__none__" ? "" : v)}>
+                  <SelectTrigger><SelectValue placeholder="选择界面模板（可选）" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">不使用模板</SelectItem>
+                    {templates.map((t) => (
+                      <SelectItem key={t.template_id} value={t.template_id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {templates.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    尚无模板，可到「字典维护 → 界面模板」新建。
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => structure.mutate()}
+                  disabled={structure.isPending || job.degraded_mode === 1}
+                >
+                  {structure.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  结构化识别（通道 B）
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => extract.mutate()}
+                  disabled={extract.isPending || !templateId}
+                >
+                  {extract.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Info className="h-4 w-4" />}
+                  按模板提取（本地）
+                </Button>
+              </div>
               {job.degraded_mode === 1 && (
                 <p className="text-xs text-muted-foreground">
-                  未配置 API Key，通道 B 不可用；请人工填写下方字段。
+                  未配置 API Key，通道 B 不可用；可用「按模板提取」预填字段后人工校对。
                 </p>
               )}
               {structured.herbs.length > 0 && (

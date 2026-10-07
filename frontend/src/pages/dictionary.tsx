@@ -26,6 +26,18 @@ import {
   type TermUpsertPayload,
 } from "@/api/admin"
 import { fetchFormulas, fetchHerbs, fetchSyndromes } from "@/api/cases"
+import {
+  createTemplate,
+  deleteTemplate,
+  updateTemplate,
+  fetchTemplates,
+  fetchTemplateDetail,
+  FIELD_CATALOG,
+  TABLE_FIELDS,
+  DOC_TYPES,
+  type Template,
+  type TemplateAnchor,
+} from "@/api/templates"
 import type { FormulaOption, HerbOption, SyndromeOption, TermOption } from "@/api/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -37,13 +49,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 
-type TabKey = "herb" | "syndrome" | "term" | "formula"
+type TabKey = "herb" | "syndrome" | "term" | "formula" | "template"
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "herb", label: "药名" },
   { key: "syndrome", label: "证型" },
   { key: "term", label: "术语" },
   { key: "formula", label: "方剂" },
+  { key: "template", label: "界面模板" },
 ]
 
 const TERM_TYPE: Record<number, string> = { 1: "舌质", 2: "舌苔", 3: "脉象" }
@@ -59,12 +72,14 @@ export function Dictionary() {
   const syndromes = useQuery({ queryKey: ["dict-syndromes", q], queryFn: () => fetchSyndromes(q), enabled: tab === "syndrome" })
   const terms = useQuery({ queryKey: ["dict-terms", q], queryFn: () => fetchAllTerms(q), enabled: tab === "term" })
   const formulas = useQuery({ queryKey: ["dict-formulas", q], queryFn: () => fetchFormulas(q), enabled: tab === "formula" })
+  const templates = useQuery({ queryKey: ["dict-templates"], queryFn: fetchTemplates, enabled: tab === "template" })
 
   function invalidate() {
     void queryClient.invalidateQueries({ queryKey: ["dict-herbs"] })
     void queryClient.invalidateQueries({ queryKey: ["dict-syndromes"] })
     void queryClient.invalidateQueries({ queryKey: ["dict-terms"] })
     void queryClient.invalidateQueries({ queryKey: ["dict-formulas"] })
+    void queryClient.invalidateQueries({ queryKey: ["dict-templates"] })
   }
 
   return (
@@ -72,7 +87,7 @@ export function Dictionary() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold tracking-tight">字典维护</h2>
-          <p className="text-sm text-muted-foreground">维护药名、证型、术语与方剂，影响录入联想与统计口径。</p>
+          <p className="text-sm text-muted-foreground">维护药名、证型、术语、方剂与界面模板，影响录入联想与识别统计。</p>
         </div>
         <Button onClick={() => { setEditing(null); setDialogOpen(true) }}>
           <Plus className="h-4 w-4" /> 添加
@@ -86,10 +101,12 @@ export function Dictionary() {
             {t.label}
           </button>
         ))}
-        <div className="ml-auto">
-          <Input className="w-52" placeholder="搜索…" value={q}
-            onChange={(e) => setQ(e.target.value)} />
-        </div>
+        {tab !== "template" && (
+          <div className="ml-auto">
+            <Input className="w-52" placeholder="搜索…" value={q}
+              onChange={(e) => setQ(e.target.value)} />
+          </div>
+        )}
       </div>
 
       <Card>
@@ -101,6 +118,7 @@ export function Dictionary() {
                 {tab === "syndrome" && <><TableHead>证型</TableHead><TableHead>辨证体系</TableHead><TableHead className="w-28">操作</TableHead></>}
                 {tab === "term" && <><TableHead>术语</TableHead><TableHead>类型</TableHead><TableHead>说明</TableHead><TableHead className="w-28">操作</TableHead></>}
                 {tab === "formula" && <><TableHead>方剂</TableHead><TableHead>出处</TableHead><TableHead className="w-28">操作</TableHead></>}
+                {tab === "template" && <><TableHead>模板名</TableHead><TableHead>单据类型</TableHead><TableHead>文字结构</TableHead><TableHead>表格列</TableHead><TableHead className="w-28">操作</TableHead></>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -143,6 +161,17 @@ export function Dictionary() {
                   </TableCell>
                 </TableRow>
               ))}
+              {tab === "template" && templates.data?.map((t: Template) => (
+                <TableRow key={t.template_id}>
+                  <TableCell className="font-medium">{t.name}</TableCell>
+                  <TableCell><Badge variant="secondary">{DOC_TYPES[t.doc_type] ?? t.doc_type}</Badge></TableCell>
+                  <TableCell className="text-muted-foreground">{t.field_anchors.length} 项</TableCell>
+                  <TableCell className="text-muted-foreground">{t.table_columns.length} 项</TableCell>
+                  <TableCell>
+                    <RowActions onEdit={() => openEdit("template", t.template_id)} onDelete={() => delTemplate(t.template_id)} />
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </CardContent>
@@ -172,6 +201,7 @@ export function Dictionary() {
   function delSyndrome(id: string) { void deleteSyndrome(id).then(invalidate) }
   function delTerm(id: number) { void deleteTerm(id).then(invalidate) }
   function delFormula(id: string) { void deleteFormula(id).then(invalidate) }
+  function delTemplate(id: string) { void deleteTemplate(id).then(invalidate) }
 }
 
 function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
@@ -213,6 +243,7 @@ function DictDialog({
         {tab === "syndrome" && <SyndromeForm editingId={editingId} onSaved={onSaved} onClose={() => onOpenChange(false)} />}
         {tab === "term" && <TermForm editingId={editingId} onSaved={onSaved} onClose={() => onOpenChange(false)} />}
         {tab === "formula" && <FormulaForm editingId={editingId} onSaved={onSaved} onClose={() => onOpenChange(false)} />}
+        {tab === "template" && <TemplateForm editingId={editingId} onSaved={onSaved} onClose={() => onOpenChange(false)} />}
       </DialogContent>
     </Dialog>
   )
@@ -376,11 +407,116 @@ function FormulaForm({ editingId, onSaved, onClose }: { editingId: string | null
   )
 }
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+function Field({ label, required, hint, children }: { label: string; required?: boolean; hint?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
       <Label>{label}{required && <span className="ml-0.5 text-destructive">*</span>}</Label>
       {children}
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  )
+}
+
+function AnchorEditor({
+  anchors,
+  onChange,
+  options,
+  placeholder,
+}: {
+  anchors: TemplateAnchor[]
+  onChange: (anchors: TemplateAnchor[]) => void
+  options: { field: string; label: string }[]
+  placeholder: string
+}) {
+  function patch(i: number, p: Partial<TemplateAnchor>) {
+    onChange(anchors.map((a, idx) => (idx === i ? { ...a, ...p } : a)))
+  }
+  function remove(i: number) {
+    onChange(anchors.filter((_, idx) => idx !== i))
+  }
+  return (
+    <div className="space-y-2">
+      {anchors.map((a, i) => (
+        <div key={i} className="flex gap-2">
+          <Input
+            className="flex-1"
+            placeholder={placeholder}
+            value={a.label}
+            onChange={(e) => patch(i, { label: e.target.value })}
+          />
+          <Select value={a.field || "__none__"} onValueChange={(v) => patch(i, { field: v === "__none__" ? "" : v })}>
+            <SelectTrigger className="w-44"><SelectValue placeholder="映射字段" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">选择字段…</SelectItem>
+              {options.map((o) => (
+                <SelectItem key={o.field} value={o.field}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => remove(i)}>
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+      ))}
+      <Button variant="outline" size="sm" onClick={() => onChange([...anchors, { label: "", field: "" }])}>
+        <Plus className="h-4 w-4" /> 添加一项
+      </Button>
+    </div>
+  )
+}
+
+function TemplateForm({ editingId, onSaved, onClose }: { editingId: string | null; onSaved: () => void; onClose: () => void }) {
+  const [form, setForm] = useState({ name: "", doc_type: 0, field_anchors: [] as TemplateAnchor[], table_columns: [] as TemplateAnchor[] })
+  const { data: detail } = useQuery({
+    queryKey: ["template-detail", editingId],
+    queryFn: () => fetchTemplateDetail(editingId!),
+    enabled: Boolean(editingId),
+  })
+  useEffect(() => {
+    if (detail && editingId) {
+      setForm({
+        name: detail.name,
+        doc_type: detail.doc_type,
+        field_anchors: detail.field_anchors,
+        table_columns: detail.table_columns,
+      })
+    }
+  }, [detail, editingId])
+  const save = useMutation({
+    mutationFn: () => editingId ? updateTemplate(editingId, form) : createTemplate(form),
+    onSuccess: () => { toast.success("已保存"); onSaved(); onClose() },
+    onError: (e: Error) => toast.error(e.message),
+  })
+  return (
+    <div>
+      <DialogHeader>
+        <DialogTitle>{editingId ? "编辑界面模板" : "添加界面模板"}</DialogTitle>
+      </DialogHeader>
+      <div className="grid gap-3 py-4">
+        <Field label="模板名" required>
+          <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="如 HIS 病历界面" />
+        </Field>
+        <Field label="单据类型">
+          <Select value={String(form.doc_type)} onValueChange={(v) => setForm({ ...form, doc_type: Number(v) })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">病历</SelectItem>
+              <SelectItem value="1">医嘱/处方</SelectItem>
+              <SelectItem value="2">其他</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label="文字结构（标签 → 字段）" hint="如“主诉”映射到“主诉”；用于从 OCR 文本中按标签提取字段。">
+          <AnchorEditor anchors={form.field_anchors} onChange={(a) => setForm({ ...form, field_anchors: a })} options={FIELD_CATALOG} placeholder="界面标签，如“主诉”" />
+        </Field>
+        <Field label="表格列（表头 → 字段）" hint="医嘱/处方表格的列名与字段映射，如“药名”映射到“药名”。">
+          <AnchorEditor anchors={form.table_columns} onChange={(a) => setForm({ ...form, table_columns: a })} options={TABLE_FIELDS} placeholder="表头，如“药名”" />
+        </Field>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose}>取消</Button>
+        <Button disabled={!form.name.trim() || save.isPending} onClick={() => save.mutate()}>保存</Button>
+      </DialogFooter>
     </div>
   )
 }
