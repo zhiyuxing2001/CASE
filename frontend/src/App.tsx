@@ -14,6 +14,8 @@ import { Dictionary } from "@/pages/dictionary"
 import { Intake } from "@/pages/intake"
 import { Learning } from "@/pages/learning"
 import { LearningStats } from "@/pages/learning-stats"
+import { MentorDetail } from "@/pages/mentor-detail"
+import { Mentors } from "@/pages/mentors"
 import { NoteEditor } from "@/pages/note-editor"
 import { OcrReview } from "@/pages/ocr-review"
 import { Settings } from "@/pages/settings"
@@ -48,6 +50,8 @@ export default function App() {
               <Route path="/learning/stats" element={<LearningStats />} />
               <Route path="/learning/new" element={<NoteEditor />} />
               <Route path="/learning/:noteId" element={<NoteEditor />} />
+              <Route path="/mentors" element={<Mentors />} />
+              <Route path="/mentors/:mentorId" element={<MentorDetail />} />
               <Route path="/dictionary" element={<Dictionary />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/settings" element={<Settings />} />
