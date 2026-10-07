@@ -17,9 +17,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..models import (CaseNarrative, Diagnosis, InfoPatient, InfoRecord,
-                      LearningNote, MentorComment, PrescriptionItem, Treatment)
+                      LabResult, LearningNote, MentorComment,
+                      PrescriptionItem, Treatment)
 
 NOTE_TYPES = {0: "跟诊日志", 1: "学习心得", 2: "读书笔记", 3: "病例讨论", 4: "阶段总结"}
+LAB_CATEGORY = {0: "检验", 1: "影像检查", 2: "其他"}
+ABNORMAL = {0: "", 1: "↑", 2: "↓"}
 
 
 def _style_run(run, size: int = 11, bold: bool = False) -> None:
@@ -87,6 +90,42 @@ def _herbs_by_record(db: Session, record_ids: list[int]) -> dict[int, list]:
     return grouped
 
 
+def _lab_by_record(db: Session, record_ids: list[int]) -> dict[int, list]:
+    rows = db.execute(
+        select(LabResult)
+        .where(LabResult.record_id.in_(record_ids))
+        .order_by(LabResult.record_id, LabResult.category, LabResult.result_id)
+    ).scalars().all()
+    grouped: dict[int, list] = {}
+    for r in rows:
+        grouped.setdefault(r.record_id, []).append(r)
+    return grouped
+
+
+def _add_lab_results(doc: Document, labs) -> None:
+    if not labs:
+        return
+    doc.add_heading("检验检查", level=3)
+    table = doc.add_table(rows=1, cols=5)
+    table.style = "Table Grid"
+    headers = ["项目", "结果", "单位", "参考范围", "异常"]
+    for i, text in enumerate(headers):
+        p = table.rows[0].cells[i].paragraphs[0]
+        _style_run(p.add_run(text), bold=True)
+    for lab in labs:
+        cells = table.add_row().cells
+        values = [
+            f"{LAB_CATEGORY.get(lab.category or 0, '')}·{lab.item_name}",
+            lab.result_value,
+            lab.unit,
+            lab.reference_range,
+            ABNORMAL.get(lab.abnormal_flag or 0, ""),
+        ]
+        for i, text in enumerate(values):
+            p = cells[i].paragraphs[0]
+            _style_run(p.add_run(text or ""))
+
+
 def generate_case_report(db: Session, course_id: str) -> BytesIO | None:
     records = db.execute(
         select(InfoRecord)
@@ -99,6 +138,7 @@ def generate_case_report(db: Session, course_id: str) -> BytesIO | None:
     patient = db.scalar(select(InfoPatient).where(
         InfoPatient.patient_id == records[0].patient_id))
     herbs_map = _herbs_by_record(db, [r.record_id for r in records])
+    lab_map = _lab_by_record(db, [r.record_id for r in records])
 
     # 关联的学习心得与导师点评
     notes = db.execute(
@@ -181,6 +221,8 @@ def generate_case_report(db: Session, course_id: str) -> BytesIO | None:
             _add_kv(doc, "西药：", t.western_medicine)
             _add_kv(doc, "医嘱：", t.advice)
             _add_kv(doc, "其他治疗：", t.other_treatment)
+
+        _add_lab_results(doc, lab_map.get(rec.record_id, []))
 
     # 三、学习心得
     if notes:

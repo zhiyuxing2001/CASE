@@ -163,3 +163,35 @@ class PrescriptionItem(CreatedAtMixin, Base):
                           doc="是否待校对，由置信度与算术校验共同决定")
     confidence = Column(REAL, nullable=True, default=1,
                         doc="识别置信度，人工录入为1")
+
+
+class LabResult(CreatedAtMixin, Base):
+    """检验检查结果表 — 结构化存储化验/检查数据。
+
+    一行一个项目：检验类（category=0）记录结果值、单位、参考范围与
+    异常方向；影像检查类（category=1）结果值为描述/结论自由文本。
+    可由 OCR 从化验单/检查报告中识别入库。
+    """
+
+    __tablename__ = "lab_result"
+
+    result_id = Column(Integer, primary_key=True, autoincrement=True,
+                       doc="结果编号")
+    record_id = Column(Integer, ForeignKey("info_record.record_id"),
+                       nullable=False, index=True, doc="病历编号")
+    patient_id = Column(Text, ForeignKey("info_patient.patient_id"),
+                        nullable=False, doc="患者编号")
+    category = Column(UnsignedTinyInt, nullable=False, default=0,
+                      doc="0检验，1影像检查，2其他")
+    item_name = Column(Text, nullable=False,
+                       doc="项目名称，如“白细胞计数”“胸部CT”")
+    result_value = Column(Text, nullable=False, default="",
+                          doc="结果值，如“12.5”“阴性”“右肺小结节”")
+    unit = Column(Text, nullable=False, default="", doc="单位，如“10^9/L”")
+    reference_range = Column(Text, nullable=False, default="",
+                             doc="参考范围，如“3.5-9.5”")
+    abnormal_flag = Column(UnsignedTinyInt, nullable=False, default=0,
+                           doc="0正常，1偏高，2偏低")
+    needs_review = Column(Boolean, nullable=False, default=False,
+                          doc="是否待校对")
+    confidence = Column(REAL, nullable=True, default=1, doc="识别置信度")

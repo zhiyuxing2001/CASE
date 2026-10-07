@@ -245,3 +245,43 @@ def test_update_record(engine: Engine) -> None:
         assert detail["record"]["clinic_date"] == "2026-01-02"
     finally:
         _cleanup()
+
+
+def test_lab_results_roundtrip(engine: Engine) -> None:
+    """检验检查结果：创建、回读与编辑替换。"""
+    client = _make_client(engine)
+    try:
+        pid = client.post("/api/patients", json={
+            "patient_name": "检验患者", "gender": True, "birthday": "1970-01-01",
+        }).json()["patient_id"]
+        rid = client.post("/api/records", json={
+            "patient_id": pid, "clinic_date": "2026-02-01",
+            "narrative": {"complaint": "乏力"},
+            "lab_results": [
+                {"category": 0, "item_name": "白细胞计数", "result_value": "12.5",
+                 "unit": "10^9/L", "reference_range": "3.5-9.5", "abnormal_flag": 1},
+                {"category": 1, "item_name": "胸部CT", "result_value": "右肺小结节"},
+            ],
+        }).json()["record_id"]
+
+        detail = client.get(f"/api/records/{rid}").json()
+        assert len(detail["lab_results"]) == 2
+        assert detail["lab_results"][0]["item_name"] == "白细胞计数"
+        assert detail["lab_results"][0]["abnormal_flag"] == 1
+        assert detail["lab_results"][1]["category"] == 1
+
+        # 编辑：整体替换
+        client.put(f"/api/records/{rid}", json={
+            "patient_id": pid, "clinic_date": "2026-02-01",
+            "narrative": {"complaint": "乏力"},
+            "lab_results": [
+                {"category": 0, "item_name": "血红蛋白", "result_value": "90",
+                 "unit": "g/L", "reference_range": "115-150", "abnormal_flag": 2},
+            ],
+        })
+        detail2 = client.get(f"/api/records/{rid}").json()
+        assert len(detail2["lab_results"]) == 1
+        assert detail2["lab_results"][0]["item_name"] == "血红蛋白"
+        assert detail2["lab_results"][0]["abnormal_flag"] == 2
+    finally:
+        _cleanup()

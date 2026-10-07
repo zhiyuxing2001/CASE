@@ -85,6 +85,17 @@ class HerbItem(BaseModel):
     needs_review: bool
 
 
+class LabResultOut(BaseModel):
+    result_id: int
+    category: int
+    item_name: str
+    result_value: str
+    unit: str
+    reference_range: str
+    abnormal_flag: int
+    needs_review: bool
+
+
 class RecordDetail(BaseModel):
     record: dict[str, Any]
     patient: PatientBrief
@@ -93,6 +104,7 @@ class RecordDetail(BaseModel):
     diagnosis: dict[str, Any]
     treatment: dict[str, Any]
     herbs: list[HerbItem]
+    lab_results: list[LabResultOut]
     course: list[dict[str, Any]]
 
 
@@ -228,6 +240,17 @@ class HerbCreate(BaseModel):
     confidence: float = 1.0
 
 
+class LabResultCreate(BaseModel):
+    category: int = 0
+    item_name: str
+    result_value: str = ""
+    unit: str = ""
+    reference_range: str = ""
+    abnormal_flag: int = 0
+    needs_review: bool = False
+    confidence: float = 1.0
+
+
 class RecordCreate(BaseModel):
     patient_id: str
     clinic_date: date
@@ -242,6 +265,7 @@ class RecordCreate(BaseModel):
     diagnosis: DiagnosisCreate = Field(default_factory=DiagnosisCreate)
     treatment: TreatmentCreate = Field(default_factory=TreatmentCreate)
     herbs: list[HerbCreate] = Field(default_factory=list)
+    lab_results: list[LabResultCreate] = Field(default_factory=list)
 
 
 class RecordCreated(BaseModel):
@@ -312,6 +336,7 @@ class OcrStructured(BaseModel):
     diagnosis: DiagnosisCreate = Field(default_factory=DiagnosisCreate)
     treatment: TreatmentCreate = Field(default_factory=TreatmentCreate)
     herbs: list[OcrHerb] = Field(default_factory=list)
+    lab_results: list[LabResultCreate] = Field(default_factory=list)
 
 
 class StructureResult(BaseModel):

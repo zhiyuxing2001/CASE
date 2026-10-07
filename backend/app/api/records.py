@@ -10,8 +10,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .. import schemas
-from ..models import (AuditLog, CaseNarrative, Diagnosis, InfoPatient, InfoRecord,
-                      Mentor, PrescriptionItem, Treatment)
+from ..models import (AuditLog, CaseNarrative, Diagnosis, InfoPatient,
+                      InfoRecord, LabResult, Mentor, PrescriptionItem,
+                      Treatment)
 from ..search import search_cases
 from ..services.record_service import create_record, update_record
 from .deps import get_db
@@ -167,6 +168,12 @@ def get_record(record_id: int, db: Session = Depends(get_db)) -> schemas.RecordD
         .order_by(PrescriptionItem.sequence)
     ).scalars().all()
 
+    lab_results = db.execute(
+        select(LabResult)
+        .where(LabResult.record_id == record_id)
+        .order_by(LabResult.category, LabResult.result_id)
+    ).scalars().all()
+
     course_rows = db.execute(
         select(InfoRecord, CaseNarrative.complaint, Diagnosis.syndrome)
         .outerjoin(CaseNarrative, CaseNarrative.record_id == InfoRecord.record_id)
@@ -215,6 +222,13 @@ def get_record(record_id: int, db: Session = Depends(get_db)) -> schemas.RecordD
             decoction_note=h.decoction_note, role=h.role,
             needs_review=bool(h.needs_review),
         ) for h in herbs],
+        lab_results=[schemas.LabResultOut(
+            result_id=l.result_id, category=l.category or 0,
+            item_name=l.item_name, result_value=l.result_value,
+            unit=l.unit, reference_range=l.reference_range,
+            abnormal_flag=l.abnormal_flag or 0,
+            needs_review=bool(l.needs_review),
+        ) for l in lab_results],
         course=[
             {**_row(v), "clinic_date": _iso(v, "clinic_date"),
              "complaint": complaint or "", "syndrome": syndrome or ""}

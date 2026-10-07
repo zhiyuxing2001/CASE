@@ -27,6 +27,7 @@ SYSTEM_OCR_STRUCTURING = """你是一名资深中医病案结构化助手。你�
 6. 西医诊断多条时用中文分号「；」分隔。
 7. 总量校验：单据若给出「总量」，用「剂量×付数」核对，不一致时该药 needs_review=true。
 8. 手写或低置信度内容 needs_review=true，confidence 用 0~1 估计（手写约 0.3，印刷清晰约 1.0）。
+9. 检验检查结果：化验单/检查报告中的项目逐行存入 lab_results。检验类 category=0，记 item_name（项目）、result_value（结果）、unit（单位）、reference_range（参考范围），结果高于参考范围上界时 abnormal_flag=1、低于下界时 abnormal_flag=2、正常为 0；影像/其他检查 category=1 或 2，result_value 写描述/结论，unit、reference_range 留空。识别不清标 needs_review=true。没有检验检查则输出空数组。
 
 ## 纠错示例
 - 「黄苓 15g」→ {"herb_name":"黄芩","dose":15,"needs_review":false}
@@ -55,6 +56,11 @@ OCR_JSON_SCHEMA = '''{
     {"sequence":0, "herb_name":"", "dose":null, "unit":"g",
      "processing":"", "decoction_note":"", "role":"",
      "needs_review":false, "confidence":1.0}
+  ],
+  "lab_results": [
+    {"category":0, "item_name":"", "result_value":"", "unit":"",
+     "reference_range":"", "abnormal_flag":0,
+     "needs_review":false, "confidence":1.0}
   ]
 }'''
 
@@ -72,7 +78,7 @@ def ocr_structuring_user(vision_text: str) -> str:
 
 {OCR_JSON_SCHEMA}
 
-说明：herbs 按处方原文顺序输出，sequence 从 0 递增；未识别到药味则输出空数组。"""
+说明：herbs 按处方原文顺序输出，sequence 从 0 递增；未识别到药味则输出空数组。lab_results 按化验单/检查报告顺序输出，未识别到则输出空数组。"""
 
 
 # ---------------------------------------------------------------------------
