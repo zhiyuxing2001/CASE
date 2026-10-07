@@ -166,11 +166,10 @@ class PrescriptionItem(CreatedAtMixin, Base):
 
 
 class LabResult(CreatedAtMixin, Base):
-    """检验检查结果表 — 结构化存储化验/检查数据。
+    """检验结果表 — 结构化存储化验数据（血常规、生化等）。
 
-    一行一个项目：检验类（category=0）记录结果值、单位、参考范围与
-    异常方向；影像检查类（category=1）结果值为描述/结论自由文本。
-    可由 OCR 从化验单/检查报告中识别入库。
+    一行一个检验项目：记录结果值、单位、参考范围与异常方向。
+    可由 OCR 从化验单中识别入库。
     """
 
     __tablename__ = "lab_result"
@@ -181,17 +180,41 @@ class LabResult(CreatedAtMixin, Base):
                        nullable=False, index=True, doc="病历编号")
     patient_id = Column(Text, ForeignKey("info_patient.patient_id"),
                         nullable=False, doc="患者编号")
-    category = Column(UnsignedTinyInt, nullable=False, default=0,
-                      doc="0检验，1影像检查，2其他")
     item_name = Column(Text, nullable=False,
-                       doc="项目名称，如“白细胞计数”“胸部CT”")
+                       doc="项目名称，如“白细胞计数”“血红蛋白”")
     result_value = Column(Text, nullable=False, default="",
-                          doc="结果值，如“12.5”“阴性”“右肺小结节”")
+                          doc="结果值，如“12.5”“阴性”")
     unit = Column(Text, nullable=False, default="", doc="单位，如“10^9/L”")
     reference_range = Column(Text, nullable=False, default="",
                              doc="参考范围，如“3.5-9.5”")
     abnormal_flag = Column(UnsignedTinyInt, nullable=False, default=0,
                            doc="0正常，1偏高，2偏低")
+    needs_review = Column(Boolean, nullable=False, default=False,
+                          doc="是否待校对")
+    confidence = Column(REAL, nullable=True, default=1, doc="识别置信度")
+
+
+class ExamReport(CreatedAtMixin, Base):
+    """检查报告表 — 结构化存储影像/超声/内镜等检查。
+
+    一行一项检查：记录检查名称、检查所见与结论（诊断意见）。
+    可由 OCR 从检查报告中识别入库。
+    """
+
+    __tablename__ = "exam_report"
+
+    exam_id = Column(Integer, primary_key=True, autoincrement=True,
+                     doc="检查编号")
+    record_id = Column(Integer, ForeignKey("info_record.record_id"),
+                       nullable=False, index=True, doc="病历编号")
+    patient_id = Column(Text, ForeignKey("info_patient.patient_id"),
+                        nullable=False, doc="患者编号")
+    item_name = Column(Text, nullable=False,
+                       doc="检查名称，如“胸部CT平扫”“腹部超声”")
+    finding = Column(Text, nullable=False, default="",
+                     doc="检查所见，如“右肺上叶小结节，直径约4mm”")
+    conclusion = Column(Text, nullable=False, default="",
+                        doc="结论/诊断意见，如“右肺小结节，建议随访”")
     needs_review = Column(Boolean, nullable=False, default=False,
                           doc="是否待校对")
     confidence = Column(REAL, nullable=True, default=1, doc="识别置信度")

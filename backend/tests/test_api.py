@@ -248,7 +248,7 @@ def test_update_record(engine: Engine) -> None:
 
 
 def test_lab_results_roundtrip(engine: Engine) -> None:
-    """检验检查结果：创建、回读与编辑替换。"""
+    """检验与检查分列：创建、回读与编辑替换。"""
     client = _make_client(engine)
     try:
         pid = client.post("/api/patients", json={
@@ -258,30 +258,37 @@ def test_lab_results_roundtrip(engine: Engine) -> None:
             "patient_id": pid, "clinic_date": "2026-02-01",
             "narrative": {"complaint": "乏力"},
             "lab_results": [
-                {"category": 0, "item_name": "白细胞计数", "result_value": "12.5",
+                {"item_name": "白细胞计数", "result_value": "12.5",
                  "unit": "10^9/L", "reference_range": "3.5-9.5", "abnormal_flag": 1},
-                {"category": 1, "item_name": "胸部CT", "result_value": "右肺小结节"},
+            ],
+            "exams": [
+                {"item_name": "胸部CT", "finding": "右肺上叶小结节",
+                 "conclusion": "建议随访"},
             ],
         }).json()["record_id"]
 
         detail = client.get(f"/api/records/{rid}").json()
-        assert len(detail["lab_results"]) == 2
+        assert len(detail["lab_results"]) == 1
         assert detail["lab_results"][0]["item_name"] == "白细胞计数"
         assert detail["lab_results"][0]["abnormal_flag"] == 1
-        assert detail["lab_results"][1]["category"] == 1
+        assert len(detail["exams"]) == 1
+        assert detail["exams"][0]["item_name"] == "胸部CT"
+        assert detail["exams"][0]["conclusion"] == "建议随访"
 
         # 编辑：整体替换
         client.put(f"/api/records/{rid}", json={
             "patient_id": pid, "clinic_date": "2026-02-01",
             "narrative": {"complaint": "乏力"},
             "lab_results": [
-                {"category": 0, "item_name": "血红蛋白", "result_value": "90",
+                {"item_name": "血红蛋白", "result_value": "90",
                  "unit": "g/L", "reference_range": "115-150", "abnormal_flag": 2},
             ],
+            "exams": [],
         })
         detail2 = client.get(f"/api/records/{rid}").json()
         assert len(detail2["lab_results"]) == 1
         assert detail2["lab_results"][0]["item_name"] == "血红蛋白"
         assert detail2["lab_results"][0]["abnormal_flag"] == 2
+        assert detail2["exams"] == []
     finally:
         _cleanup()

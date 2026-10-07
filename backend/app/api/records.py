@@ -10,9 +10,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .. import schemas
-from ..models import (AuditLog, CaseNarrative, Diagnosis, InfoPatient,
-                      InfoRecord, LabResult, Mentor, PrescriptionItem,
-                      Treatment)
+from ..models import (AuditLog, CaseNarrative, Diagnosis, ExamReport,
+                      InfoPatient, InfoRecord, LabResult, Mentor,
+                      PrescriptionItem, Treatment)
 from ..search import search_cases
 from ..services.record_service import create_record, update_record
 from .deps import get_db
@@ -171,7 +171,13 @@ def get_record(record_id: int, db: Session = Depends(get_db)) -> schemas.RecordD
     lab_results = db.execute(
         select(LabResult)
         .where(LabResult.record_id == record_id)
-        .order_by(LabResult.category, LabResult.result_id)
+        .order_by(LabResult.result_id)
+    ).scalars().all()
+
+    exams = db.execute(
+        select(ExamReport)
+        .where(ExamReport.record_id == record_id)
+        .order_by(ExamReport.exam_id)
     ).scalars().all()
 
     course_rows = db.execute(
@@ -223,12 +229,17 @@ def get_record(record_id: int, db: Session = Depends(get_db)) -> schemas.RecordD
             needs_review=bool(h.needs_review),
         ) for h in herbs],
         lab_results=[schemas.LabResultOut(
-            result_id=l.result_id, category=l.category or 0,
+            result_id=l.result_id,
             item_name=l.item_name, result_value=l.result_value,
             unit=l.unit, reference_range=l.reference_range,
             abnormal_flag=l.abnormal_flag or 0,
             needs_review=bool(l.needs_review),
         ) for l in lab_results],
+        exams=[schemas.ExamOut(
+            exam_id=e.exam_id, item_name=e.item_name,
+            finding=e.finding, conclusion=e.conclusion,
+            needs_review=bool(e.needs_review),
+        ) for e in exams],
         course=[
             {**_row(v), "clinic_date": _iso(v, "clinic_date"),
              "complaint": complaint or "", "syndrome": syndrome or ""}

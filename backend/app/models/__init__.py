@@ -5,8 +5,8 @@ is what Alembic autogenerate and the DDL drift check rely on.
 """
 
 from .base import Base, CreatedAtMixin, SoftDeleteMixin, TimestampsMixin
-from .clinical import (CaseNarrative, Diagnosis, LabResult, PrescriptionItem,
-                       Treatment)
+from .clinical import (CaseNarrative, Diagnosis, ExamReport, LabResult,
+                       PrescriptionItem, Treatment)
 from .dictionary import (DictFormula, DictHerb, DictHerbAlias, DictSyndrome,
                          DictTemplate, DictTerm)
 from .learning import LearningNote, MentorComment, NoteRecordLink
@@ -32,6 +32,7 @@ __all__ = [
     "Treatment",
     "PrescriptionItem",
     "LabResult",
+    "ExamReport",
     # 字典
     "DictHerb",
     "DictHerbAlias",

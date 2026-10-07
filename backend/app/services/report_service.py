@@ -16,12 +16,11 @@ from docx.shared import Pt
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..models import (CaseNarrative, Diagnosis, InfoPatient, InfoRecord,
-                      LabResult, LearningNote, MentorComment,
+from ..models import (CaseNarrative, Diagnosis, ExamReport, InfoPatient,
+                      InfoRecord, LabResult, LearningNote, MentorComment,
                       PrescriptionItem, Treatment)
 
 NOTE_TYPES = {0: "跟诊日志", 1: "学习心得", 2: "读书笔记", 3: "病例讨论", 4: "阶段总结"}
-LAB_CATEGORY = {0: "检验", 1: "影像检查", 2: "其他"}
 ABNORMAL = {0: "", 1: "↑", 2: "↓"}
 
 
@@ -94,7 +93,19 @@ def _lab_by_record(db: Session, record_ids: list[int]) -> dict[int, list]:
     rows = db.execute(
         select(LabResult)
         .where(LabResult.record_id.in_(record_ids))
-        .order_by(LabResult.record_id, LabResult.category, LabResult.result_id)
+        .order_by(LabResult.record_id, LabResult.result_id)
+    ).scalars().all()
+    grouped: dict[int, list] = {}
+    for r in rows:
+        grouped.setdefault(r.record_id, []).append(r)
+    return grouped
+
+
+def _exam_by_record(db: Session, record_ids: list[int]) -> dict[int, list]:
+    rows = db.execute(
+        select(ExamReport)
+        .where(ExamReport.record_id.in_(record_ids))
+        .order_by(ExamReport.record_id, ExamReport.exam_id)
     ).scalars().all()
     grouped: dict[int, list] = {}
     for r in rows:
@@ -105,7 +116,7 @@ def _lab_by_record(db: Session, record_ids: list[int]) -> dict[int, list]:
 def _add_lab_results(doc: Document, labs) -> None:
     if not labs:
         return
-    doc.add_heading("检验检查", level=3)
+    doc.add_heading("检验结果", level=3)
     table = doc.add_table(rows=1, cols=5)
     table.style = "Table Grid"
     headers = ["项目", "结果", "单位", "参考范围", "异常"]
@@ -115,7 +126,7 @@ def _add_lab_results(doc: Document, labs) -> None:
     for lab in labs:
         cells = table.add_row().cells
         values = [
-            f"{LAB_CATEGORY.get(lab.category or 0, '')}·{lab.item_name}",
+            lab.item_name,
             lab.result_value,
             lab.unit,
             lab.reference_range,
@@ -124,6 +135,17 @@ def _add_lab_results(doc: Document, labs) -> None:
         for i, text in enumerate(values):
             p = cells[i].paragraphs[0]
             _style_run(p.add_run(text or ""))
+
+
+def _add_exams(doc: Document, exams) -> None:
+    if not exams:
+        return
+    doc.add_heading("检查报告", level=3)
+    for exam in exams:
+        p = doc.add_paragraph()
+        _style_run(p.add_run(exam.item_name), bold=True)
+        _add_kv(doc, "所见：", exam.finding)
+        _add_kv(doc, "结论：", exam.conclusion)
 
 
 def generate_case_report(db: Session, course_id: str) -> BytesIO | None:
@@ -139,6 +161,7 @@ def generate_case_report(db: Session, course_id: str) -> BytesIO | None:
         InfoPatient.patient_id == records[0].patient_id))
     herbs_map = _herbs_by_record(db, [r.record_id for r in records])
     lab_map = _lab_by_record(db, [r.record_id for r in records])
+    exam_map = _exam_by_record(db, [r.record_id for r in records])
 
     # 关联的学习心得与导师点评
     notes = db.execute(
@@ -223,6 +246,7 @@ def generate_case_report(db: Session, course_id: str) -> BytesIO | None:
             _add_kv(doc, "其他治疗：", t.other_treatment)
 
         _add_lab_results(doc, lab_map.get(rec.record_id, []))
+        _add_exams(doc, exam_map.get(rec.record_id, []))
 
     # 三、学习心得
     if notes:

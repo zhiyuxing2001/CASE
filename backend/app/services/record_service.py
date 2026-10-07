@@ -19,8 +19,8 @@ from ulid import ULID
 
 from .. import schemas
 from ..dictionary import resolve_herb
-from ..models import (CaseNarrative, Diagnosis, InfoPatient, InfoRecord,
-                      LabResult, PrescriptionItem, Treatment)
+from ..models import (CaseNarrative, Diagnosis, ExamReport, InfoPatient,
+                      InfoRecord, LabResult, PrescriptionItem, Treatment)
 
 
 def create_record(db: Session, payload: schemas.RecordCreate) -> int:
@@ -107,11 +107,19 @@ def create_record(db: Session, payload: schemas.RecordCreate) -> int:
     for lab in payload.lab_results:
         db.add(LabResult(
             record_id=record.record_id, patient_id=payload.patient_id,
-            category=lab.category, item_name=lab.item_name,
+            item_name=lab.item_name,
             result_value=lab.result_value, unit=lab.unit,
             reference_range=lab.reference_range,
             abnormal_flag=lab.abnormal_flag,
             needs_review=lab.needs_review, confidence=lab.confidence,
+        ))
+
+    for exam in payload.exams:
+        db.add(ExamReport(
+            record_id=record.record_id, patient_id=payload.patient_id,
+            item_name=exam.item_name, finding=exam.finding,
+            conclusion=exam.conclusion,
+            needs_review=exam.needs_review, confidence=exam.confidence,
         ))
 
     db.commit()
@@ -179,11 +187,20 @@ def update_record(db: Session, record_id: int,
     for lab in payload.lab_results:
         db.add(LabResult(
             record_id=record_id, patient_id=record.patient_id,
-            category=lab.category, item_name=lab.item_name,
+            item_name=lab.item_name,
             result_value=lab.result_value, unit=lab.unit,
             reference_range=lab.reference_range,
             abnormal_flag=lab.abnormal_flag,
             needs_review=lab.needs_review, confidence=lab.confidence,
+        ))
+
+    db.execute(delete(ExamReport).where(ExamReport.record_id == record_id))
+    for exam in payload.exams:
+        db.add(ExamReport(
+            record_id=record_id, patient_id=record.patient_id,
+            item_name=exam.item_name, finding=exam.finding,
+            conclusion=exam.conclusion,
+            needs_review=exam.needs_review, confidence=exam.confidence,
         ))
 
     db.commit()

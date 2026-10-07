@@ -329,12 +329,11 @@ TABLES: list[dict] = [
         ],
     },
     {
-        "sheet": "06 检验检查结果表",
-        "cn": "检验检查结果表",
+        "sheet": "06 检验结果表",
+        "cn": "检验结果表",
         "en": "lab_result",
-        "note": "结构化存储化验/检查数据，一行一个项目；检验类记录结果值、"
-                "单位、参考范围与异常方向，影像检查类结果值为描述/结论，"
-                "可由 OCR 从化验单/检查报告中识别入库。",
+        "note": "结构化存储化验数据，一行一个检验项目：结果值、单位、参考"
+                "范围与异常方向。可由 OCR 从化验单中识别入库。",
         "fields": [
             ("result_id", "结果编号", "INTEGER", "PRIMARY KEY AUTOINCREMENT",
              "计算机生成：从1开始，以1为步长增序编号"),
@@ -342,18 +341,42 @@ TABLES: list[dict] = [
              "必填，关联 info_record"),
             ("patient_id", "患者编号", "TEXT", "FOREIGN KEY",
              "计算机生成，与患者基本信息同步记录"),
-            ("category", "类别", "UNSIGNED TINYINT", "NOT NULL DEFAULT 0",
-             "0检验，1影像检查，2其他；详见附表A18"),
             ("item_name", "项目名称", "TEXT", "NOT NULL",
-             "必填，如“白细胞计数”“胸部CT”"),
+             "必填，如“白细胞计数”“血红蛋白”"),
             ("result_value", "结果值", "TEXT", "DEFAULT ''",
-             "检验为数值/定性结果，影像检查为描述/结论"),
+             "数值或定性结果，如“12.5”“阴性”"),
             ("unit", "单位", "TEXT", "DEFAULT ''",
              "选填，如“10^9/L”"),
             ("reference_range", "参考范围", "TEXT", "DEFAULT ''",
              "选填，如“3.5-9.5”"),
             ("abnormal_flag", "异常方向", "UNSIGNED TINYINT", "DEFAULT 0",
              "0正常，1偏高，2偏低"),
+            ("needs_review", "是否待校对", "BOOLEAN", "DEFAULT 0",
+             "0为正常，1为需人工复核"),
+            ("confidence", "识别置信度", "REAL", "DEFAULT 1",
+             "选填，人工录入为1"),
+            CREATED_AT,
+        ],
+    },
+    {
+        "sheet": "07 检查报告表",
+        "cn": "检查报告表",
+        "en": "exam_report",
+        "note": "结构化存储影像/超声/内镜等检查，一行一项：检查名称、检查"
+                "所见与结论。可由 OCR 从检查报告中识别入库。",
+        "fields": [
+            ("exam_id", "检查编号", "INTEGER", "PRIMARY KEY AUTOINCREMENT",
+             "计算机生成：从1开始，以1为步长增序编号"),
+            ("record_id", "病历编号", "INTEGER", "FOREIGN KEY",
+             "必填，关联 info_record"),
+            ("patient_id", "患者编号", "TEXT", "FOREIGN KEY",
+             "计算机生成，与患者基本信息同步记录"),
+            ("item_name", "检查名称", "TEXT", "NOT NULL",
+             "必填，如“胸部CT平扫”“腹部超声”"),
+            ("finding", "检查所见", "TEXT", "DEFAULT ''",
+             "选填，如“右肺上叶小结节，直径约4mm”"),
+            ("conclusion", "结论", "TEXT", "DEFAULT ''",
+             "选填，诊断意见，如“右肺小结节，建议随访”"),
             ("needs_review", "是否待校对", "BOOLEAN", "DEFAULT 0",
              "0为正常，1为需人工复核"),
             ("confidence", "识别置信度", "REAL", "DEFAULT 1",
@@ -865,9 +888,6 @@ ENUMS: list[tuple[str, str, list[tuple[int, str]]]] = [
     ("A17", "操作类型（audit_log.action）", [
         (0, "新增"), (1, "修改"), (2, "删除"), (3, "恢复"), (4, "脱敏"),
     ]),
-    ("A18", "检验检查类别（lab_result.category）", [
-        (0, "检验"), (1, "影像检查"), (2, "其他"),
-    ]),
 ]
 
 # --------------------------------------------------------------------------
@@ -890,7 +910,7 @@ GROUPS: dict[str, list[str]] = {
     "一、主数据": ["info_patient", "info_record", "mentor"],
     "二、病案主体": ["case_narrative"],
     "三、诊断与治疗": ["diagnosis", "treatment", "prescription_item",
-                      "lab_result"],
+                      "lab_result", "exam_report"],
     "四、字典": ["dict_herb", "dict_herb_alias", "dict_syndrome",
                  "dict_formula", "dict_term", "dict_template"],
     "五、跟师学习": ["learning_note", "mentor_comment", "note_record_link"],
