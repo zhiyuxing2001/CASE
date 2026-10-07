@@ -13,7 +13,8 @@ from sqlalchemy.orm import Session
 from .. import schemas
 from ..llm import ChatRequest, Message, Task, get_router
 from ..llm import prompts
-from ..models import CaseNarrative, Diagnosis, InfoPatient, InfoRecord
+from ..models import (CaseNarrative, Diagnosis, InfoPatient, InfoRecord,
+                      LearningNote)
 from ..search import search_cases
 from .deps import get_db
 
@@ -37,6 +38,24 @@ def _sources(db: Session, hits: list[dict]) -> list[schemas.AiSource]:
             snippet=(hit.get("search_text") or "")[:200],
         ))
     return result
+
+
+def _case_source(db: Session, record_id: int) -> schemas.AiSource | None:
+    record = db.get(InfoRecord, record_id)
+    if record is None:
+        return None
+    patient = db.scalar(select(InfoPatient).where(
+        InfoPatient.patient_id == record.patient_id))
+    narrative = db.get(CaseNarrative, record_id)
+    diagnosis = db.get(Diagnosis, record_id)
+    return schemas.AiSource(
+        record_id=record_id,
+        patient_name=patient.patient_name if patient else "",
+        clinic_date=str(record.clinic_date),
+        complaint=narrative.complaint if narrative else "",
+        syndrome=diagnosis.syndrome if diagnosis else "",
+        snippet=(narrative.present_illness if narrative else "")[:200],
+    )
 
 
 def _case_context(db: Session, case_id: int) -> str:
@@ -77,22 +96,46 @@ def chat(payload: schemas.AiChatRequest,
     sources = _sources(db, hits)
     router = get_router()
 
+    # 引用病案：无论 AI 是否配置，都把它放到来源首位
+    if payload.case_id is not None:
+        ref = _case_source(db, payload.case_id)
+        if ref is not None:
+            sources = [ref] + [s for s in sources
+                               if s.record_id != payload.case_id]
+
     if not router.configured:
-        # 降级：仅返回检索结果，由前端呈现为"检索到的相关病案"
+        # 降级：仅返回检索结果（含引用的病案），由前端呈现为"相关病案"
         return schemas.AiChatResponse(
             answer="", sources=sources, degraded=True, ai_configured=False,
         )
-    if not sources:
+
+    context_blocks: list[str] = []
+    # 引用某一份病案
+    if payload.case_id is not None:
+        ctx = _case_context(db, payload.case_id)
+        if ctx:
+            context_blocks.append(f"【参考病案】\n{ctx}")
+    # 引用某一篇跟师笔记
+    if payload.note_id is not None:
+        note = db.get(LearningNote, payload.note_id)
+        if note is not None and not note.is_deleted:
+            context_blocks.append(
+                f"【参考笔记】《{note.title}》\n{note.content_md}")
+
+    if sources:
+        context_blocks.append("【病案资料】\n" + "\n\n".join(
+            f"[{i + 1}] {s.patient_name}，{s.clinic_date} 就诊，"
+            f"主诉「{s.complaint}」，证型「{s.syndrome}」。资料：{s.snippet}"
+            for i, s in enumerate(sources)
+        ))
+
+    if not context_blocks:
         return schemas.AiChatResponse(
             answer="未在病案库中检索到相关内容。",
             sources=[], degraded=False, ai_configured=True,
         )
 
-    context = "\n\n".join(
-        f"[{i + 1}] {s.patient_name}，{s.clinic_date} 就诊，主诉「{s.complaint}」，"
-        f"证型「{s.syndrome}」。资料：{s.snippet}"
-        for i, s in enumerate(sources)
-    )
+    context = "\n\n".join(context_blocks)
     messages = [
         Message("system", prompts.SYSTEM_CASE_QA),
         Message("user", prompts.case_qa_user(context, payload.question)),

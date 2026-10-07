@@ -518,6 +518,7 @@ class AiSettingsUpdate(BaseModel):
 class AiChatRequest(BaseModel):
     question: str
     case_id: int | None = None
+    note_id: str | None = None
 
 
 class AiSource(BaseModel):

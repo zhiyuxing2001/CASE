@@ -44,6 +44,7 @@ def test_ai_degrades_without_key(engine: Engine) -> None:
         session.add(Diagnosis(record_id=record.record_id, patient_id="P-AI",
                               tcm_disease="胃脘痛", syndrome="肝胃不和证"))
         session.commit()
+        rid = record.record_id
     rebuild_search_index(engine)
 
     client = _client(engine)
@@ -58,6 +59,12 @@ def test_ai_degrades_without_key(engine: Engine) -> None:
         assert chat["degraded"] is True
         assert len(chat["sources"]) >= 1
         assert chat["sources"][0]["syndrome"] == "肝胃不和证"
+
+        # 引用某病案：即使无 Key，引用病案也应进入来源
+        ref = client.post("/api/ai/chat", json={
+            "question": "证型是什么", "case_id": rid,
+        }).json()
+        assert any(s["record_id"] == rid for s in ref["sources"])
 
         # 写作类任务明确返回未配置
         draft = client.post("/api/ai/draft", json={"topic": "测试"}).json()
