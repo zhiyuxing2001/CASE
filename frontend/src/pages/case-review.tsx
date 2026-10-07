@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ArrowLeft, CheckCheck, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
@@ -41,10 +41,15 @@ export function CaseReview() {
   const { recordId } = useParams<{ recordId: string }>()
   const id = Number(recordId)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const [herbs, setHerbs] = useState<ReviewHerb[]>([])
   const [labs, setLabs] = useState<ReviewLab[]>([])
   const [exams, setExams] = useState<ReviewExam[]>([])
+  // 进入页面时待校对项的索引，保持稳定以便勾选后仍可回看
+  const [flaggedHerbIdx, setFlaggedHerbIdx] = useState<number[]>([])
+  const [flaggedLabIdx, setFlaggedLabIdx] = useState<number[]>([])
+  const [flaggedExamIdx, setFlaggedExamIdx] = useState<number[]>([])
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["record", id],
@@ -68,12 +73,15 @@ export function CaseReview() {
       item_name: e.item_name, finding: e.finding, conclusion: e.conclusion,
       needs_review: e.needs_review,
     })))
+    setFlaggedHerbIdx(data.herbs.map((h, i) => (h.needs_review ? i : -1)).filter((i) => i >= 0))
+    setFlaggedLabIdx(data.lab_results.map((l, i) => (l.needs_review ? i : -1)).filter((i) => i >= 0))
+    setFlaggedExamIdx(data.exams.map((e, i) => (e.needs_review ? i : -1)).filter((i) => i >= 0))
   }, [data])
 
-  const flaggedHerbs = herbs.filter((h) => h.needs_review)
-  const flaggedLabs = labs.filter((l) => l.needs_review)
-  const flaggedExams = exams.filter((e) => e.needs_review)
-  const totalFlagged = flaggedHerbs.length + flaggedLabs.length + flaggedExams.length
+  const totalFlagged =
+    herbs.filter((h) => h.needs_review).length +
+    labs.filter((l) => l.needs_review).length +
+    exams.filter((e) => e.needs_review).length
 
   const save = useMutation({
     mutationFn: () => reviewRecord(id, {
@@ -85,6 +93,8 @@ export function CaseReview() {
     }),
     onSuccess: () => {
       toast.success("校对已保存")
+      void queryClient.invalidateQueries({ queryKey: ["record", id] })
+      void queryClient.invalidateQueries({ queryKey: ["courses"] })
       navigate(`/cases/${id}`)
     },
     onError: (e: Error) => toast.error(e.message),
@@ -140,17 +150,17 @@ export function CaseReview() {
         </CardContent></Card>
       ) : (
         <>
-          {flaggedHerbs.length > 0 && (
+          {flaggedHerbIdx.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">待校对药味</CardTitle>
                 <CardDescription>修正误识别的药名、剂量与煎服法</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
-                {flaggedHerbs.map((h) => {
-                  const i = herbs.indexOf(h)
+                {flaggedHerbIdx.map((i) => {
+                  const h = herbs[i]
                   return (
-                    <ReviewRow key={h.sequence} checked={false} onCheck={(v) => setHerb(i, { needs_review: !v })}>
+                    <ReviewRow key={i} checked={!h.needs_review} onCheck={(v) => setHerb(i, { needs_review: !v })}>
                       <div className="grid grid-cols-[1fr_4.5rem_3.5rem_1fr_1fr] gap-2">
                         <Input value={h.herb_name} onChange={(e) => setHerb(i, { herb_name: e.target.value })} />
                         <Input type="number" value={h.dose == null ? "" : String(h.dose)} onChange={(e) => setHerb(i, { dose: e.target.value ? Number(e.target.value) : null })} className="tabular-nums" />
@@ -165,16 +175,16 @@ export function CaseReview() {
             </Card>
           )}
 
-          {flaggedLabs.length > 0 && (
+          {flaggedLabIdx.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">待校对检验</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {flaggedLabs.map((l, idx) => {
-                  const i = labs.indexOf(l)
+                {flaggedLabIdx.map((i) => {
+                  const l = labs[i]
                   return (
-                    <ReviewRow key={idx} checked={false} onCheck={(v) => setLab(i, { needs_review: !v })}>
+                    <ReviewRow key={i} checked={!l.needs_review} onCheck={(v) => setLab(i, { needs_review: !v })}>
                       <div className="grid grid-cols-[1fr_5rem_4rem_6rem_5.5rem] gap-2">
                         <Input value={l.item_name} onChange={(e) => setLab(i, { item_name: e.target.value })} />
                         <Input value={l.result_value} onChange={(e) => setLab(i, { result_value: e.target.value })} />
@@ -196,16 +206,16 @@ export function CaseReview() {
             </Card>
           )}
 
-          {flaggedExams.length > 0 && (
+          {flaggedExamIdx.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">待校对检查</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {flaggedExams.map((e, idx) => {
-                  const i = exams.indexOf(e)
+                {flaggedExamIdx.map((i) => {
+                  const e = exams[i]
                   return (
-                    <ReviewRow key={idx} checked={false} onCheck={(v) => setExam(i, { needs_review: !v })}>
+                    <ReviewRow key={i} checked={!e.needs_review} onCheck={(v) => setExam(i, { needs_review: !v })}>
                       <div className="space-y-1.5">
                         <Input value={e.item_name} onChange={(ev) => setExam(i, { item_name: ev.target.value })} placeholder="检查名称" />
                         <Input value={e.finding} onChange={(ev) => setExam(i, { finding: ev.target.value })} placeholder="检查所见" />

@@ -1,7 +1,7 @@
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Plus, Trash2 } from "lucide-react"
 import { useEffect, useState } from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 
 import {
@@ -83,12 +83,13 @@ function Field({
 
 export function CaseEntry() {
   const navigate = useNavigate()
+  const { recordId: editRecordId } = useParams<{ recordId: string }>()
   const [searchParams] = useSearchParams()
   const parentRecordId = searchParams.get("parent_record_id")
   const fixedPatientId = searchParams.get("patient_id")
   const isFollowUp = Boolean(parentRecordId && fixedPatientId)
-  const editRecordId = searchParams.get("record_id")
   const isEdit = Boolean(editRecordId)
+  const queryClient = useQueryClient()
 
   // 患者
   const [patientMode, setPatientMode] = useState<"existing" | "new">("new")
@@ -282,6 +283,8 @@ export function CaseEntry() {
     },
     onSuccess: (res) => {
       toast.success(isEdit ? "病案已更新" : `病案已保存（编号 ${res.record_id}）`)
+      void queryClient.invalidateQueries({ queryKey: ["record"] })
+      void queryClient.invalidateQueries({ queryKey: ["courses"] })
       navigate(isEdit ? `/cases/${editRecordId}` : `/cases`)
     },
     onError: (e: Error) => {
