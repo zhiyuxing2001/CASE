@@ -167,12 +167,14 @@ def get_record(record_id: int, db: Session = Depends(get_db)) -> schemas.RecordD
         .order_by(PrescriptionItem.sequence)
     ).scalars().all()
 
-    course = db.execute(
-        select(InfoRecord)
+    course_rows = db.execute(
+        select(InfoRecord, CaseNarrative.complaint, Diagnosis.syndrome)
+        .outerjoin(CaseNarrative, CaseNarrative.record_id == InfoRecord.record_id)
+        .outerjoin(Diagnosis, Diagnosis.record_id == InfoRecord.record_id)
         .where(InfoRecord.father_id == record.father_id,
                InfoRecord.is_deleted.is_(False))
         .order_by(InfoRecord.visit_no)
-    ).scalars().all()
+    ).all()
 
     def _row(obj) -> dict[str, Any]:
         return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
@@ -182,7 +184,7 @@ def get_record(record_id: int, db: Session = Depends(get_db)) -> schemas.RecordD
         return value.isoformat() if value is not None else None
 
     # 首诊病案文本：既往史、个人史、过敏史等“只记一次”的字段取自首诊
-    first_record = course[0] if course else record
+    first_record = course_rows[0][0] if course_rows else record
     first_narrative = db.get(CaseNarrative, first_record.record_id)
 
     return schemas.RecordDetail(
@@ -214,8 +216,9 @@ def get_record(record_id: int, db: Session = Depends(get_db)) -> schemas.RecordD
             needs_review=bool(h.needs_review),
         ) for h in herbs],
         course=[
-            {**_row(v), "clinic_date": _iso(v, "clinic_date")}
-            for v in course
+            {**_row(v), "clinic_date": _iso(v, "clinic_date"),
+             "complaint": complaint or "", "syndrome": syndrome or ""}
+            for v, complaint, syndrome in course_rows
         ],
     )
 
