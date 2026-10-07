@@ -32,8 +32,15 @@ export function fetchAiStatus(): Promise<AiStatus> {
   return getJSON<AiStatus>("/api/ai/status")
 }
 
-export function askQuestion(question: string): Promise<AiChatResponse> {
-  return postJSON<AiChatResponse>("/api/ai/chat", { question })
+export function askQuestion(
+  question: string,
+  opts?: { case_id?: number | null; note_id?: string | null },
+): Promise<AiChatResponse> {
+  return postJSON<AiChatResponse>("/api/ai/chat", {
+    question,
+    case_id: opts?.case_id ?? null,
+    note_id: opts?.note_id ?? null,
+  })
 }
 
 export function draftNote(topic: string, caseId?: number | null): Promise<AiDraftResponse> {

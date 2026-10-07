@@ -6,7 +6,6 @@ import { AppShell } from "@/components/layout/app-shell"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Admin } from "@/pages/admin"
 import { Analytics } from "@/pages/analytics"
-import { Assistant } from "@/pages/assistant"
 import { CaseDetail } from "@/pages/case-detail"
 import { CaseEntry } from "@/pages/case-entry"
 import { Cases } from "@/pages/cases"
@@ -14,6 +13,7 @@ import { Dashboard } from "@/pages/dashboard"
 import { Dictionary } from "@/pages/dictionary"
 import { Intake } from "@/pages/intake"
 import { Learning } from "@/pages/learning"
+import { LearningStats } from "@/pages/learning-stats"
 import { NoteEditor } from "@/pages/note-editor"
 import { OcrReview } from "@/pages/ocr-review"
 import { Settings } from "@/pages/settings"
@@ -45,9 +45,9 @@ export default function App() {
               <Route path="/intake" element={<Intake />} />
               <Route path="/intake/:jobId" element={<OcrReview />} />
               <Route path="/learning" element={<Learning />} />
+              <Route path="/learning/stats" element={<LearningStats />} />
               <Route path="/learning/new" element={<NoteEditor />} />
               <Route path="/learning/:noteId" element={<NoteEditor />} />
-              <Route path="/assistant" element={<Assistant />} />
               <Route path="/dictionary" element={<Dictionary />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/settings" element={<Settings />} />

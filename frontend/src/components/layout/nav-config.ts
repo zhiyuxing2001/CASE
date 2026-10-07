@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   ScanLine,
   Settings,
-  Sparkles,
   type LucideIcon,
 } from "lucide-react"
 
@@ -68,10 +67,10 @@ export const NAV_GROUPS: NavGroup[] = [
         description: "跟诊日志、心得与导师点评",
       },
       {
-        title: "AI 助手",
-        path: "/assistant",
-        icon: Sparkles,
-        description: "资料问答与写作辅助",
+        title: "跟师统计",
+        path: "/learning/stats",
+        icon: BarChart3,
+        description: "跟诊病案、证型与笔记统计",
       },
     ],
   },
@@ -106,7 +105,7 @@ export const NAV_TITLES: Record<string, string> = {
   "/analytics": "病案分析",
   "/intake": "导入校对",
   "/learning": "跟师学习",
-  "/assistant": "AI 助手",
+  "/learning/stats": "跟师统计",
   "/dictionary": "字典维护",
   "/admin": "数据管理",
   "/settings": "设置",

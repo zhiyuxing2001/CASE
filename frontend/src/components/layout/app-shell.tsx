@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom"
 
+import { FloatingAssistant } from "@/components/floating-assistant"
 import { Header } from "./header"
 import { Sidebar } from "./sidebar"
 
@@ -13,6 +14,7 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+      <FloatingAssistant />
     </div>
   )
 }
