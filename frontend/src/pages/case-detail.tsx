@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, ChevronLeft, ChevronRight, FileDown, History, Plus } from "lucide-react"
+import { ArrowLeft, ChevronLeft, ChevronRight, FileDown, History, Pencil, Plus } from "lucide-react"
 import { useParams, Link } from "react-router-dom"
 import { toast } from "sonner"
 
@@ -109,6 +109,11 @@ export function CaseDetail() {
           {herbs.some((h) => h.needs_review) && (
             <Badge variant="warning">有待校对药味</Badge>
           )}
+          <Button size="sm" variant="outline" asChild>
+            <Link to={`/cases/${id}/edit`}>
+              <Pencil className="h-4 w-4" /> 编辑
+            </Link>
+          </Button>
           <Button size="sm" variant="outline" onClick={handleReport}>
             <FileDown className="h-4 w-4" /> 病案导出
           </Button>

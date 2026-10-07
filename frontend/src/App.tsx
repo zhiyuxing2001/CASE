@@ -39,6 +39,7 @@ export default function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/cases" element={<Cases />} />
               <Route path="/cases/new" element={<CaseEntry />} />
+              <Route path="/cases/:recordId/edit" element={<CaseEntry />} />
               <Route path="/cases/:recordId" element={<CaseDetail />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/intake" element={<Intake />} />

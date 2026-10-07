@@ -1,4 +1,4 @@
-import { getJSON, postJSON } from "@/lib/api"
+import { getJSON, postJSON, putJSON } from "@/lib/api"
 import type {
   AuditEntry,
   CourseList,
@@ -128,6 +128,13 @@ export function createRecord(
   payload: RecordCreatePayload,
 ): Promise<{ record_id: number }> {
   return postJSON<{ record_id: number }>("/api/records", payload)
+}
+
+export function updateRecord(
+  recordId: number,
+  payload: RecordCreatePayload,
+): Promise<{ record_id: number }> {
+  return putJSON<{ record_id: number }>(`/api/records/${recordId}`, payload)
 }
 
 export function fetchPatients(q = ""): Promise<PatientOption[]> {

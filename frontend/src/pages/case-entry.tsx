@@ -1,6 +1,6 @@
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { Plus, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 
@@ -11,8 +11,10 @@ import {
   fetchMentors,
   fetchPatient,
   fetchPatients,
+  fetchRecord,
   fetchSyndromes,
   fetchTerms,
+  updateRecord,
 } from "@/api/cases"
 import type { MentorOption, PatientOption } from "@/api/types"
 import { FreeTextCombobox, type ComboboxOption } from "@/components/free-text-combobox"
@@ -22,7 +24,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { useQuery } from "@tanstack/react-query"
 
 interface HerbRow {
   herb_name: string
@@ -66,6 +67,8 @@ export function CaseEntry() {
   const parentRecordId = searchParams.get("parent_record_id")
   const fixedPatientId = searchParams.get("patient_id")
   const isFollowUp = Boolean(parentRecordId && fixedPatientId)
+  const editRecordId = searchParams.get("record_id")
+  const isEdit = Boolean(editRecordId)
 
   // 患者
   const [patientMode, setPatientMode] = useState<"existing" | "new">("new")
@@ -109,11 +112,74 @@ export function CaseEntry() {
     queryFn: () => fetchPatient(fixedPatientId!),
     enabled: isFollowUp,
   })
+  const { data: editRecord } = useQuery({
+    queryKey: ["record", editRecordId],
+    queryFn: () => fetchRecord(Number(editRecordId)),
+    enabled: isEdit,
+  })
+
+  // 编辑模式：载入已有病案并回填表单
+  useEffect(() => {
+    if (!editRecord) return
+    const rec = editRecord.record as Record<string, unknown>
+    setVisit({
+      clinic_date: String(rec.clinic_date ?? ""),
+      visit_type: String(rec.visit_type ?? 0),
+      mentor_id: String(rec.mentor_id ?? ""),
+      department: String(rec.department ?? ""),
+      age: rec.age != null ? String(rec.age) : "",
+      addr: String(rec.addr ?? ""),
+    })
+    setNarrative({
+      complaint: editRecord.narrative.complaint ?? "",
+      present_illness: editRecord.narrative.present_illness ?? "",
+      past_history: editRecord.narrative.past_history ?? "",
+      personal_history: editRecord.narrative.personal_history ?? "",
+      allergy_history: editRecord.narrative.allergy_history ?? "",
+      body_of_tongue: editRecord.narrative.body_of_tongue ?? "",
+      fur_of_tongue: editRecord.narrative.fur_of_tongue ?? "",
+      pulse: editRecord.narrative.pulse ?? "",
+      other_cond: editRecord.narrative.other_cond ?? "",
+      physical_exam: editRecord.narrative.physical_exam ?? "",
+      auxiliary_exam: editRecord.narrative.auxiliary_exam ?? "",
+    })
+    setDiagnosis({
+      tcm_disease: editRecord.diagnosis.tcm_disease ?? "",
+      syndrome: editRecord.diagnosis.syndrome ?? "",
+      syndrome_id: editRecord.diagnosis.syndrome_id ?? null,
+      wm_diagnosis: editRecord.diagnosis.wm_diagnosis ?? "",
+      patterns_analysis: editRecord.diagnosis.patterns_analysis ?? "",
+      differential_diagnosis: editRecord.diagnosis.differential_diagnosis ?? "",
+    })
+    setTreatment({
+      treatment_principle: (editRecord.treatment.treatment_principle as string) ?? "",
+      formula_name: (editRecord.treatment.formula_name as string) ?? "",
+      dose_count: editRecord.treatment.dose_count != null ? String(editRecord.treatment.dose_count) : "",
+      decoction: (editRecord.treatment.decoction as string) ?? "",
+      usage: (editRecord.treatment.usage as string) ?? "",
+      advice: (editRecord.treatment.advice as string) ?? "",
+      western_medicine: (editRecord.treatment.western_medicine as string) ?? "",
+      other_treatment: (editRecord.treatment.other_treatment as string) ?? "",
+    })
+    const herbRows = editRecord.herbs.map((h) => ({
+      herb_name: h.herb_name_norm || h.herb_name,
+      dose: h.dose != null ? String(h.dose) : "",
+      unit: h.unit || "g",
+      processing: h.processing || "",
+      decoction_note: h.decoction_note || "",
+      role: h.role || "",
+    }))
+    setHerbs(herbRows.length ? herbRows : [{ ...EMPTY_HERB }])
+  }, [editRecord])
 
   const mutation = useMutation({
     mutationFn: async () => {
-      let patientId = isFollowUp ? fixedPatientId : selectedPatient?.patient_id
-      if (patientMode === "new" && !isFollowUp) {
+      let patientId = isEdit
+        ? String(editRecord?.record.patient_id ?? "")
+        : isFollowUp
+          ? fixedPatientId
+          : selectedPatient?.patient_id
+      if (patientMode === "new" && !isFollowUp && !isEdit) {
         if (!newPatient.name.trim() || !newPatient.birthday) {
           throw new Error("请填写患者姓名与出生日期")
         }
@@ -161,11 +227,12 @@ export function CaseEntry() {
             sequence: i,
           })),
       }
+      if (isEdit) return updateRecord(Number(editRecordId), payload)
       return createRecord(payload)
     },
     onSuccess: (res) => {
-      toast.success(`病案已保存（编号 ${res.record_id}）`)
-      navigate(`/cases`)
+      toast.success(isEdit ? "病案已更新" : `病案已保存（编号 ${res.record_id}）`)
+      navigate(isEdit ? `/cases/${editRecordId}` : `/cases`)
     },
     onError: (e: Error) => {
       toast.error(e.message)
@@ -204,7 +271,7 @@ export function CaseEntry() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold tracking-tight">
-            {isFollowUp ? "添加随诊" : "录入新病案"}
+            {isEdit ? "编辑病案" : isFollowUp ? "添加随诊" : "录入新病案"}
           </h2>
           <p className="text-sm text-muted-foreground">自由书写，结构化字段仅用于检索与统计。</p>
         </div>
@@ -216,12 +283,20 @@ export function CaseEntry() {
           <CardTitle className="text-base">患者</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
-          {isFollowUp ? (
+          {isFollowUp || isEdit ? (
             <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2 text-sm">
-              <span className="text-muted-foreground">随诊对象</span>
-              <span className="font-medium">{followUpPatient?.patient_name ?? "患者"}</span>
               <span className="text-muted-foreground">
-                （{followUpPatient?.gender ? "男" : "女"}）
+                {isEdit ? "患者" : "随诊对象"}
+              </span>
+              <span className="font-medium">
+                {isEdit
+                  ? editRecord?.patient.patient_name
+                  : followUpPatient?.patient_name ?? "患者"}
+              </span>
+              <span className="text-muted-foreground">
+                （{isEdit
+                  ? (editRecord?.patient.gender ? "男" : "女")
+                  : (followUpPatient?.gender ? "男" : "女")}）
               </span>
             </div>
           ) : (
