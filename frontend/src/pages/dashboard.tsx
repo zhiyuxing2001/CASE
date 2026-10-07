@@ -34,10 +34,10 @@ const RECENT_CASES = [
 ]
 
 const QUICK_ACTIONS = [
-  { title: "录入新病案", desc: "手工录入或从图片识别", to: "/intake" },
-  { title: "校对识别结果", desc: "有 3 份待确认", to: "/intake" },
-  { title: "撰写学习心得", desc: "基于最近的病案", to: "/learning" },
-  { title: "向 AI 提问", desc: "查阅经典与个人病案库", to: "/assistant" },
+  { title: "录入新病案", desc: "手工录入一份病程", to: "/cases/new" },
+  { title: "导入识别病案", desc: "上传图片进行 OCR 识别", to: "/intake" },
+  { title: "撰写学习心得", desc: "新建跟诊日志或心得", to: "/learning/new" },
+  { title: "维护界面模板", desc: "固化 HIS 界面结构以提升识别", to: "/dictionary?tab=template" },
 ]
 
 export function Dashboard() {

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Pencil, Plus, Trash2 } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 
 import {
@@ -62,7 +63,24 @@ const TABS: { key: TabKey; label: string }[] = [
 const TERM_TYPE: Record<number, string> = { 1: "舌质", 2: "舌苔", 3: "脉象" }
 
 export function Dictionary() {
-  const [tab, setTab] = useState<TabKey>("herb")
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialTab = searchParams.get("tab")
+  const [tab, setTab] = useState<TabKey>(
+    TABS.some((t) => t.key === initialTab) ? (initialTab as TabKey) : "herb",
+  )
+
+  // 当 URL 的 tab 参数变化时同步（支持快捷操作直达某个标签页）
+  useEffect(() => {
+    const p = searchParams.get("tab")
+    if (p && TABS.some((t) => t.key === p)) {
+      setTab(p as TabKey)
+    }
+  }, [searchParams])
+
+  function selectTab(key: TabKey) {
+    setTab(key)
+    setSearchParams(key === "herb" ? {} : { tab: key }, { replace: true })
+  }
   const [q, setQ] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<{ id: string } | null>(null)
@@ -96,7 +114,7 @@ export function Dictionary() {
 
       <div className="flex flex-wrap items-center gap-2">
         {TABS.map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)}
+          <button key={t.key} onClick={() => selectTab(t.key)}
             className={`rounded-full border px-3 py-1 text-sm transition-colors ${tab === t.key ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted"}`}>
             {t.label}
           </button>
@@ -188,7 +206,7 @@ export function Dictionary() {
   )
 
   function openEdit(key: TabKey, id: string) {
-    setTab(key)
+    selectTab(key)
     setEditing({ id })
     setDialogOpen(true)
   }
