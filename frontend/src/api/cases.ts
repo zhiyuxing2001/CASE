@@ -103,6 +103,15 @@ export interface HerbPayload {
   sequence: number
 }
 
+export interface LabResultPayload {
+  category: number
+  item_name: string
+  result_value?: string
+  unit?: string
+  reference_range?: string
+  abnormal_flag?: number
+}
+
 export interface RecordCreatePayload {
   patient_id: string
   clinic_date: string
@@ -116,6 +125,7 @@ export interface RecordCreatePayload {
   diagnosis: Record<string, string | null>
   treatment: Record<string, string | number | null>
   herbs: HerbPayload[]
+  lab_results?: LabResultPayload[]
 }
 
 export function createPatient(

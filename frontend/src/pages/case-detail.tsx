@@ -18,12 +18,15 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
 const VISIT_TYPE: Record<number, string> = { 0: "初诊", 1: "复诊", 2: "随访" }
+const LAB_CATEGORY: Record<number, string> = { 0: "检验", 1: "影像", 2: "其他" }
+const ABNORMAL: Record<number, string> = { 0: "", 1: "↑", 2: "↓" }
 const TABLE_CN: Record<string, string> = {
   info_record: "就诊信息",
   case_narrative: "病案",
   diagnosis: "诊断",
   treatment: "治疗",
   prescription_item: "药味",
+  lab_result: "检验检查",
 }
 const ACTION_CN: Record<number, string> = { 0: "新增", 1: "修改", 2: "删除", 3: "恢复", 4: "脱敏" }
 
@@ -330,6 +333,44 @@ export function CaseDetail() {
             <KV label="医嘱与调护" value={data.treatment.advice as string} />
             <KV label="其他治疗" value={data.treatment.other_treatment as string} />
           </Section>
+
+          {/* 检验检查 */}
+          {data.lab_results.length > 0 && (
+            <Section title="检验检查">
+              <div className="py-2">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-xs text-muted-foreground">
+                      <th className="py-1.5 pr-2 font-medium">类别</th>
+                      <th className="py-1.5 pr-2 font-medium">项目</th>
+                      <th className="py-1.5 pr-2 font-medium">结果</th>
+                      <th className="py-1.5 pr-2 font-medium">单位</th>
+                      <th className="py-1.5 font-medium">参考范围</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.lab_results.map((l) => (
+                      <tr key={l.result_id} className="border-b last:border-0">
+                        <td className="py-1.5 pr-2 text-muted-foreground">{LAB_CATEGORY[l.category] ?? l.category}</td>
+                        <td className="py-1.5 pr-2 font-medium">
+                          {l.item_name}
+                          {l.needs_review && <Badge variant="warning" className="ml-1.5">待校对</Badge>}
+                        </td>
+                        <td className="py-1.5 pr-2 tabular-nums">
+                          {l.result_value}
+                          {ABNORMAL[l.abnormal_flag] && (
+                            <span className="ml-0.5 text-destructive">{ABNORMAL[l.abnormal_flag]}</span>
+                          )}
+                        </td>
+                        <td className="py-1.5 pr-2 text-muted-foreground">{l.unit}</td>
+                        <td className="py-1.5 text-muted-foreground">{l.reference_range}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
+          )}
         </div>
       </div>
 

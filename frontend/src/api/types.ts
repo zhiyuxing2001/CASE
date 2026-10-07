@@ -119,6 +119,17 @@ export interface HerbItem {
   needs_review: boolean
 }
 
+export interface LabResultItem {
+  result_id: number
+  category: number
+  item_name: string
+  result_value: string
+  unit: string
+  reference_range: string
+  abnormal_flag: number
+  needs_review: boolean
+}
+
 export interface CourseVisit {
   record_id: number
   clinic_date: string
@@ -136,6 +147,7 @@ export interface RecordDetail {
   diagnosis: Record<string, string | null>
   treatment: Record<string, string | number | null>
   herbs: HerbItem[]
+  lab_results: LabResultItem[]
   course: CourseVisit[]
 }
 

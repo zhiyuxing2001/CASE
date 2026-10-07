@@ -39,11 +39,23 @@ export interface OcrHerb {
   confidence: number
 }
 
+export interface OcrLabResult {
+  category: number
+  item_name: string
+  result_value: string
+  unit: string
+  reference_range: string
+  abnormal_flag: number
+  needs_review: boolean
+  confidence: number
+}
+
 export interface OcrStructured {
   narrative: Record<string, string>
   diagnosis: Record<string, string | null>
   treatment: Record<string, string | number | null>
   herbs: OcrHerb[]
+  lab_results: OcrLabResult[]
 }
 
 export interface StructureResult {

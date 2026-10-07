@@ -11,6 +11,7 @@ import {
   structureOcrJob,
   type OcrCommitPayload,
   type OcrHerb,
+  type OcrLabResult,
   type OcrStructured,
 } from "@/api/ocr"
 import { fetchTemplates } from "@/api/templates"
@@ -37,6 +38,7 @@ function emptyStructured(): OcrStructured {
       decoction: "", usage: "",
     },
     herbs: [],
+    lab_results: [],
   }
 }
 
@@ -117,6 +119,12 @@ export function OcrReview() {
     setStructured((s) => ({
       ...s,
       herbs: s.herbs.map((h, idx) => (idx === i ? { ...h, ...patch } : h)),
+    }))
+  }
+  function setLab(i: number, patch: Partial<OcrLabResult>) {
+    setStructured((s) => ({
+      ...s,
+      lab_results: s.lab_results.map((l, idx) => (idx === i ? { ...l, ...patch } : l)),
     }))
   }
 
@@ -388,6 +396,46 @@ export function OcrReview() {
                 </div>
                 <Button type="button" variant="outline" size="sm" onClick={() => setStructured((s) => ({ ...s, herbs: [...s.herbs, { sequence: s.herbs.length, herb_name: "", dose: null, unit: "g", processing: "", decoction_note: "", role: "", needs_review: false, confidence: 1 }] }))}>
                   <Plus className="h-4 w-4" /> 添加药味
+                </Button>
+              </div>
+
+              {/* 检验检查 */}
+              <div className="space-y-2">
+                <Label>检验检查</Label>
+                <div className="overflow-hidden rounded-lg border">
+                  <div className="grid grid-cols-[6rem_1fr_6rem_5rem_5rem_2rem] gap-2 border-b bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                    <span>类别</span><span>项目</span><span>结果</span><span>单位</span><span>参考范围</span><span />
+                  </div>
+                  <div className="divide-y">
+                    {structured.lab_results.map((l, i) => (
+                      <div key={i} className={cn("grid grid-cols-[6rem_1fr_6rem_5rem_5rem_2rem] items-center gap-2 px-3 py-1.5", l.needs_review && "bg-amber-500/5")}>
+                        <Select value={String(l.category)} onValueChange={(v) => setLab(i, { category: Number(v) })}>
+                          <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">检验</SelectItem>
+                            <SelectItem value="1">影像</SelectItem>
+                            <SelectItem value="2">其他</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <div className="flex items-center gap-1.5">
+                          <Input value={l.item_name} onChange={(e) => setLab(i, { item_name: e.target.value })} />
+                          {l.needs_review && <Badge variant="warning" className="shrink-0">待校对</Badge>}
+                        </div>
+                        <Input value={l.result_value} onChange={(e) => setLab(i, { result_value: e.target.value })} />
+                        <Input value={l.unit} onChange={(e) => setLab(i, { unit: e.target.value })} />
+                        <Input value={l.reference_range} onChange={(e) => setLab(i, { reference_range: e.target.value })} />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setStructured((s) => ({ ...s, lab_results: s.lab_results.filter((_, j) => j !== i) }))}>
+                          <Trash2 className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </div>
+                    ))}
+                    {structured.lab_results.length === 0 && (
+                      <div className="px-3 py-3 text-sm text-muted-foreground">暂无检验检查（可点击下方添加）</div>
+                    )}
+                  </div>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => setStructured((s) => ({ ...s, lab_results: [...s.lab_results, { category: 0, item_name: "", result_value: "", unit: "", reference_range: "", abnormal_flag: 0, needs_review: false, confidence: 1 }] }))}>
+                  <Plus className="h-4 w-4" /> 添加检验检查
                 </Button>
               </div>
 
