@@ -168,13 +168,24 @@ def update_record(db: Session, record_id: int,
         db.add(treatment)
     _apply(treatment, payload.treatment.model_dump())
 
-    # 药味整体替换
-    db.execute(delete(PrescriptionItem).where(
-        PrescriptionItem.record_id == record_id))
-    for herb in payload.herbs:
+    _replace_clinical_items(db, record, payload.herbs,
+                            payload.lab_results, payload.exams)
+
+    db.commit()
+    return record_id
+
+
+def _replace_clinical_items(db: Session, record: InfoRecord,
+                            herbs, lab_results, exams) -> None:
+    """整体替换药味、检验与检查（不触碰病史/诊断/治疗元数据）。"""
+    rid = record.record_id
+    pid = record.patient_id
+
+    db.execute(delete(PrescriptionItem).where(PrescriptionItem.record_id == rid))
+    for herb in herbs:
         resolution = resolve_herb(db, herb.herb_name)
         db.add(PrescriptionItem(
-            record_id=record_id, patient_id=record.patient_id,
+            record_id=rid, patient_id=pid,
             sequence=herb.sequence, herb_name=herb.herb_name,
             herb_name_norm=resolution.normalised, herb_id=resolution.herb_id,
             dose=herb.dose, unit=herb.unit, processing=herb.processing,
@@ -182,11 +193,10 @@ def update_record(db: Session, record_id: int,
             needs_review=herb.needs_review, confidence=herb.confidence,
         ))
 
-    # 检验检查结果整体替换
-    db.execute(delete(LabResult).where(LabResult.record_id == record_id))
-    for lab in payload.lab_results:
+    db.execute(delete(LabResult).where(LabResult.record_id == rid))
+    for lab in lab_results:
         db.add(LabResult(
-            record_id=record_id, patient_id=record.patient_id,
+            record_id=rid, patient_id=pid,
             item_name=lab.item_name,
             result_value=lab.result_value, unit=lab.unit,
             reference_range=lab.reference_range,
@@ -194,14 +204,27 @@ def update_record(db: Session, record_id: int,
             needs_review=lab.needs_review, confidence=lab.confidence,
         ))
 
-    db.execute(delete(ExamReport).where(ExamReport.record_id == record_id))
-    for exam in payload.exams:
+    db.execute(delete(ExamReport).where(ExamReport.record_id == rid))
+    for exam in exams:
         db.add(ExamReport(
-            record_id=record_id, patient_id=record.patient_id,
+            record_id=rid, patient_id=pid,
             item_name=exam.item_name, finding=exam.finding,
             conclusion=exam.conclusion,
             needs_review=exam.needs_review, confidence=exam.confidence,
         ))
 
+
+def review_record(db: Session, record_id: int,
+                  payload: schemas.RecordReviewRequest) -> int:
+    """校对：仅整体替换药味与检验检查，病史/诊断/治疗保持不变。
+
+    用于待校对病案——用户修正并确认 flagged 项后，清除 needs_review。
+    """
+    record = db.get(InfoRecord, record_id)
+    if record is None or record.is_deleted:
+        raise HTTPException(status_code=404, detail="病案不存在")
+
+    _replace_clinical_items(db, record, payload.herbs,
+                            payload.lab_results, payload.exams)
     db.commit()
     return record_id

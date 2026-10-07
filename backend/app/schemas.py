@@ -288,6 +288,13 @@ class RecordCreated(BaseModel):
     record_id: int
 
 
+class RecordReviewRequest(BaseModel):
+    """校对请求：仅整体替换药味与检验检查，病史/诊断/治疗保持不变。"""
+    herbs: list[HerbCreate] = Field(default_factory=list)
+    lab_results: list[LabResultCreate] = Field(default_factory=list)
+    exams: list[ExamCreate] = Field(default_factory=list)
+
+
 class AuditEntry(BaseModel):
     table_name: str
     action: int

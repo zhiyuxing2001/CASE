@@ -14,7 +14,7 @@ from ..models import (AuditLog, CaseNarrative, Diagnosis, ExamReport,
                       InfoPatient, InfoRecord, LabResult, Mentor,
                       PrescriptionItem, Treatment)
 from ..search import search_cases
-from ..services.record_service import create_record, update_record
+from ..services.record_service import create_record, review_record, update_record
 from .deps import get_db
 
 router = APIRouter(prefix="/api/records", tags=["records"])
@@ -288,6 +288,16 @@ def update_record_endpoint(
     db: Session = Depends(get_db),
 ) -> schemas.RecordCreated:
     update_record(db, record_id, payload)
+    return schemas.RecordCreated(record_id=record_id)
+
+
+@router.post("/{record_id}/review", response_model=schemas.RecordCreated)
+def review_record_endpoint(
+    record_id: int,
+    payload: schemas.RecordReviewRequest,
+    db: Session = Depends(get_db),
+) -> schemas.RecordCreated:
+    review_record(db, record_id, payload)
     return schemas.RecordCreated(record_id=record_id)
 
 

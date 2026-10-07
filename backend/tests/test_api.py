@@ -292,3 +292,40 @@ def test_lab_results_roundtrip(engine: Engine) -> None:
         assert detail2["exams"] == []
     finally:
         _cleanup()
+
+
+def test_review_record_clears_flags(engine: Engine) -> None:
+    """校对：仅替换药味/检验检查并清除待校对标记，病史诊断不变。"""
+    client = _make_client(engine)
+    try:
+        pid = client.post("/api/patients", json={
+            "patient_name": "校对患者", "gender": True, "birthday": "1970-01-01",
+        }).json()["patient_id"]
+        rid = client.post("/api/records", json={
+            "patient_id": pid, "clinic_date": "2026-03-01",
+            "narrative": {"complaint": "胃痛", "present_illness": "餐后加重"},
+            "diagnosis": {"syndrome": "肝胃不和证"},
+            "herbs": [{"herb_name": "黄苓", "dose": 15, "sequence": 0, "needs_review": True}],
+            "lab_results": [{"item_name": "白细胞计数", "result_value": "12.5",
+                             "abnormal_flag": 1, "needs_review": True}],
+            "exams": [],
+        }).json()["record_id"]
+
+        # 校对：修正药名 + 清除待校对标记
+        r = client.post(f"/api/records/{rid}/review", json={
+            "herbs": [{"herb_name": "黄芩", "dose": 15, "sequence": 0, "needs_review": False}],
+            "lab_results": [{"item_name": "白细胞计数", "result_value": "12.5",
+                             "abnormal_flag": 1, "needs_review": False}],
+            "exams": [],
+        })
+        assert r.status_code == 200
+
+        detail = client.get(f"/api/records/{rid}").json()
+        assert detail["herbs"][0]["herb_name_norm"] == "黄芩"
+        assert detail["herbs"][0]["needs_review"] is False
+        assert detail["lab_results"][0]["needs_review"] is False
+        # 病史/诊断保持不变
+        assert detail["narrative"]["complaint"] == "胃痛"
+        assert detail["diagnosis"]["syndrome"] == "肝胃不和证"
+    finally:
+        _cleanup()
