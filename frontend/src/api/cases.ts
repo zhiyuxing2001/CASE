@@ -153,6 +153,17 @@ export function updateRecord(
   return putJSON<{ record_id: number }>(`/api/records/${recordId}`, payload)
 }
 
+export function reviewRecord(
+  recordId: number,
+  payload: {
+    herbs: (HerbPayload & { needs_review?: boolean })[]
+    lab_results: (LabResultPayload & { needs_review?: boolean })[]
+    exams: (ExamPayload & { needs_review?: boolean })[]
+  },
+): Promise<{ record_id: number }> {
+  return postJSON<{ record_id: number }>(`/api/records/${recordId}/review`, payload)
+}
+
 export function fetchPatients(q = ""): Promise<PatientOption[]> {
   return getJSON<PatientOption[]>(`/api/patients${qs({ q })}`)
 }

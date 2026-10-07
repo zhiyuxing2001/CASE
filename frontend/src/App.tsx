@@ -8,6 +8,7 @@ import { Admin } from "@/pages/admin"
 import { Analytics } from "@/pages/analytics"
 import { CaseDetail } from "@/pages/case-detail"
 import { CaseEntry } from "@/pages/case-entry"
+import { CaseReview } from "@/pages/case-review"
 import { Cases } from "@/pages/cases"
 import { Dashboard } from "@/pages/dashboard"
 import { Dictionary } from "@/pages/dictionary"
@@ -42,6 +43,7 @@ export default function App() {
               <Route path="/cases" element={<Cases />} />
               <Route path="/cases/new" element={<CaseEntry />} />
               <Route path="/cases/:recordId/edit" element={<CaseEntry />} />
+              <Route path="/cases/:recordId/review" element={<CaseReview />} />
               <Route path="/cases/:recordId" element={<CaseDetail />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/intake" element={<Intake />} />

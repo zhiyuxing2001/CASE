@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, ChevronLeft, ChevronRight, FileDown, History, Pencil, Plus } from "lucide-react"
+import { ArrowLeft, CheckCheck, ChevronLeft, ChevronRight, FileDown, History, Pencil, Plus } from "lucide-react"
 import { useParams, Link } from "react-router-dom"
 import { toast } from "sonner"
 
@@ -77,6 +77,14 @@ export function CaseDetail() {
   const record = data.record as Record<string, unknown>
   const herbs = data.herbs
   const course = data.course
+  const needsReview =
+    herbs.some((h) => h.needs_review) ||
+    data.lab_results.some((l) => l.needs_review) ||
+    data.exams.some((e) => e.needs_review)
+  const reviewCount =
+    herbs.filter((h) => h.needs_review).length +
+    data.lab_results.filter((l) => l.needs_review).length +
+    data.exams.filter((e) => e.needs_review).length
   const currentIndex = course.findIndex((v) => v.record_id === id)
   const prevVisit = currentIndex > 0 ? course[currentIndex - 1] : null
   const nextVisit = currentIndex >= 0 && currentIndex < course.length - 1 ? course[currentIndex + 1] : null
@@ -109,8 +117,15 @@ export function CaseDetail() {
             {VISIT_TYPE[(record.visit_type as number) ?? 0] ?? "初诊"}
             {record.visit_no ? ` · 第${record.visit_no}诊` : ""}
           </Badge>
-          {herbs.some((h) => h.needs_review) && (
-            <Badge variant="warning">有待校对药味</Badge>
+          {needsReview && (
+            <Badge variant="warning">待校对 {reviewCount} 项</Badge>
+          )}
+          {needsReview && (
+            <Button size="sm" variant="outline" asChild>
+              <Link to={`/cases/${id}/review`}>
+                <CheckCheck className="h-4 w-4" /> 校对
+              </Link>
+            </Button>
           )}
           <Button size="sm" variant="outline" asChild>
             <Link to={`/cases/${id}/edit`}>
