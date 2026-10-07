@@ -70,3 +70,31 @@ def test_note_crud_and_comment(engine: Engine) -> None:
         assert r.json()["total_records"] >= 0
     finally:
         app.dependency_overrides.pop(get_db, None)
+
+
+def test_delete_and_export_notes(engine: Engine) -> None:
+    client = _client(engine)
+    try:
+        n1 = client.post("/api/learning/notes", json={
+            "note_type": 1, "title": "心得一", "content_md": "# 要点一",
+        }).json()["note_id"]
+        n2 = client.post("/api/learning/notes", json={
+            "note_type": 0, "title": "日志二", "content_md": "内容二",
+        }).json()["note_id"]
+
+        # 导出
+        r = client.post("/api/learning/notes/export", json={"note_ids": [n1, n2]})
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith(
+            "application/vnd.openxmlformats-officedocument.wordprocessingml")
+
+        # 删除（软删除）
+        r = client.post("/api/learning/notes/delete", json={"note_ids": [n1]})
+        assert r.status_code == 200
+        assert r.json()["deleted"] == 1
+
+        items = client.get("/api/learning/notes").json()["items"]
+        assert all(n["note_id"] != n1 for n in items)
+        assert any(n["note_id"] == n2 for n in items)
+    finally:
+        app.dependency_overrides.pop(get_db, None)

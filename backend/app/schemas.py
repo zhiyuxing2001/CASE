@@ -589,3 +589,11 @@ class CourseBatchRequest(BaseModel):
 
 class CourseBatchResult(BaseModel):
     deleted: int
+
+
+class NoteBatchRequest(BaseModel):
+    note_ids: list[str]
+
+
+class NoteBatchResult(BaseModel):
+    deleted: int

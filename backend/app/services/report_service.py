@@ -207,3 +207,46 @@ def _mentor_name(db: Session, mentor_id: str | None) -> str:
     from ..models import Mentor
     mentor = db.get(Mentor, mentor_id)
     return mentor.mentor_name if mentor else ""
+
+
+def generate_notes_report(db: Session, note_ids: list[str]) -> BytesIO | None:
+    """把选中的学习心得导出为 Word 汇编（含导师点评）。"""
+    notes = db.execute(
+        select(LearningNote)
+        .where(LearningNote.note_id.in_(note_ids),
+               LearningNote.is_deleted.is_(False))
+        .order_by(LearningNote.created_at)
+    ).scalars().all()
+    if not notes:
+        return None
+
+    comments_by_note: dict[str, list] = {}
+    comments = db.execute(
+        select(MentorComment)
+        .where(MentorComment.target_type == 0,
+               MentorComment.target_id.in_(note_ids))
+        .order_by(MentorComment.commented_at)
+    ).scalars().all()
+    for c in comments:
+        comments_by_note.setdefault(c.target_id, []).append(c)
+
+    doc = Document()
+    title = doc.add_heading("跟师学习心得汇编", level=0)
+    _style_run(title.runs[0], size=22, bold=True)
+
+    for note in notes:
+        type_label = NOTE_TYPES.get(note.note_type or 0, "心得")
+        doc.add_heading(f"{note.title}（{type_label}）", level=1)
+        _add_kv(doc, "记录时间：", note.created_at.strftime("%Y-%m-%d"))
+        _add_kv(doc, "带教老师：", _mentor_name(db, note.mentor_id))
+        for line in _md_to_plain(note.content_md):
+            _style_run(doc.add_paragraph().add_run(line))
+        for c in comments_by_note.get(note.note_id, []):
+            p = doc.add_paragraph()
+            _style_run(p.add_run("导师点评："), bold=True)
+            _style_run(p.add_run(c.content))
+
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf

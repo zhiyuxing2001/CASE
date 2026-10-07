@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 from datetime import datetime
+from io import BytesIO
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func, or_, select
+from fastapi.responses import StreamingResponse
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session
 from ulid import ULID
 
 from .. import schemas
 from ..models import (CaseNarrative, Diagnosis, InfoPatient, InfoRecord,
                       LearningNote, Mentor, MentorComment)
+from ..services.report_service import generate_notes_report
 from .deps import get_db
 
 router = APIRouter(prefix="/api/learning", tags=["learning"])
@@ -236,4 +239,42 @@ def progress(db: Session = Depends(get_db)) -> schemas.ProgressOut:
         total_syndromes=total_syndromes,
         top_syndromes=[{"syndrome": s, "count": c}
                        for s, c in syndrome_rows if s],
+    )
+
+
+@router.post("/notes/delete", response_model=schemas.NoteBatchResult)
+def delete_notes(
+    payload: schemas.NoteBatchRequest,
+    db: Session = Depends(get_db),
+) -> schemas.NoteBatchResult:
+    """软删除选中的学习心得。"""
+    ids = payload.note_ids
+    if not ids:
+        raise HTTPException(status_code=400, detail="请选择要删除的心得")
+    result = db.execute(
+        update(LearningNote)
+        .where(LearningNote.note_id.in_(ids))
+        .values(is_deleted=True)
+    )
+    db.commit()
+    return schemas.NoteBatchResult(deleted=result.rowcount or 0)
+
+
+@router.post("/notes/export")
+def export_notes(
+    payload: schemas.NoteBatchRequest,
+    db: Session = Depends(get_db),
+) -> StreamingResponse:
+    """把选中的学习心得导出为 Word 汇编（含导师点评）。"""
+    ids = payload.note_ids
+    if not ids:
+        raise HTTPException(status_code=400, detail="请选择要导出的心得")
+    buf = generate_notes_report(db, ids)
+    if buf is None:
+        raise HTTPException(status_code=404, detail="心得不存在")
+    filename = f"notes-{datetime.now().strftime('%Y%m%d-%H%M%S')}.docx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
