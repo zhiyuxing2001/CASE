@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import Engine  # noqa: E402
 from sqlalchemy.orm import sessionmaker  # noqa: E402
 
+from app.api import ocr as ocr_api  # noqa: E402
 from app.api.deps import get_db  # noqa: E402
 from app.audit import enable_audit  # noqa: E402
 from app.config import settings  # noqa: E402
@@ -19,6 +20,16 @@ from app.main import app  # noqa: E402
 from app.seed import seed_dictionaries  # noqa: E402
 
 SAMPLE = pathlib.Path(__file__).resolve().parents[2] / "tools" / "ocr_test_sample.png"
+
+
+class _NoKeyRouter:
+    configured = False
+
+    def primary(self):
+        return {"provider": "deepseek-api", "model": "deepseek-chat"}
+
+    def chat(self, request):
+        return None
 
 
 def _client(engine: Engine) -> TestClient:
@@ -37,6 +48,7 @@ def test_ocr_structure_degrades_without_key(engine, monkeypatch, tmp_path) -> No
     if not SAMPLE.is_file():
         pytest.skip("样例图不存在")
     monkeypatch.setattr(settings, "data_dir", tmp_path)
+    monkeypatch.setattr(ocr_api, "get_router", lambda: _NoKeyRouter())
     (tmp_path / "attachments").mkdir()
 
     client = _client(engine)

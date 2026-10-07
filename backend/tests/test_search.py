@@ -154,3 +154,21 @@ def test_rebuild_search_index_restores_consistency(
     indexed = rebuild_search_index(engine)
     assert indexed == 1
     assert search_cases(session, "胃脘胀痛")
+
+
+def test_search_cases_multi_extracts_terms_from_question(
+    session: Session, sample_case: int
+) -> None:
+    """自然语言问题能抽取术语并检索到病案（证型名优先）。"""
+    from app.models import DictSyndrome
+    from app.search import extract_terms, search_cases_multi
+
+    session.add(DictSyndrome(syndrome_id="S-QA", syndrome_name="肝胃不和证"))
+    session.commit()
+
+    terms = extract_terms(session, "肝胃不和证在我整理的病案里怎么治？")
+    assert "肝胃不和证" in terms
+
+    hits = search_cases_multi(session, "肝胃不和证在我整理的病案里怎么治？")
+    assert hits
+    assert hits[0]["record_id"] == sample_case

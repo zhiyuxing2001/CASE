@@ -24,13 +24,22 @@ At single-user scale the fallback is comfortably fast.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
-from sqlalchemy import Engine, text
+from sqlalchemy import Engine, select, text
 from sqlalchemy.orm import Session
+
+from ..models import DictSyndrome, DictTerm
 
 #: Shortest query the trigram tokenizer can match.
 MIN_FTS_QUERY_LEN = 3
+
+#: 自然语言提问里剔除的停用词/疑问词。
+_QUESTION_STOPWORDS = {
+    "请问", "帮我", "整理", "我", "的", "了", "在", "有", "哪些", "什么",
+    "怎么", "如何", "为什么", "常用", "是否", "是", "吗", "呢", "请", "你",
+}
 
 #: Columns aggregated into the search text, per source table.
 _SEARCH_SOURCES: dict[str, tuple[str, ...]] = {
@@ -271,3 +280,55 @@ def search_cases(
         params = {"q": f"%{term}%", "lim": limit}
 
     return [dict(row._mapping) for row in session.execute(sql, params)]
+
+
+def extract_terms(session: Session, question: str) -> list[str]:
+    """从自然语言问题中抽取可用于检索的术语。
+
+    优先匹配字典证型名与中医病名，再按标点/空格切分并剔除停用词，
+    返回按长度降序的候选术语（长术语更精确，排前面）。
+    """
+    terms: set[str] = set()
+
+    syndrome_names = session.scalars(
+        select(DictSyndrome.syndrome_name).where(DictSyndrome.syndrome_name != "")
+    ).all()
+    disease_names = session.scalars(
+        select(DictTerm.term).where(DictTerm.term_type == 8, DictTerm.term != "")
+    ).all()
+    for name in (*syndrome_names, *disease_names):
+        name = (name or "").strip()
+        if len(name) >= 2 and name in question:
+            terms.add(name)
+
+    for chunk in re.split(r"[^\u4e00-\u9fffA-Za-z0-9]+", question):
+        chunk = chunk.strip()
+        if len(chunk) >= 2 and chunk not in _QUESTION_STOPWORDS:
+            terms.add(chunk)
+
+    return sorted(terms, key=len, reverse=True)
+
+
+def search_cases_multi(
+    session: Session,
+    question: str,
+    *,
+    limit: int = 50,
+) -> list[dict[str, Any]]:
+    """面向自然语言问题的检索：抽取术语后逐条搜索并去重合并。"""
+    terms = extract_terms(session, question)
+    if not terms:
+        return []
+
+    seen: set[int] = set()
+    results: list[dict[str, Any]] = []
+    for term in terms:
+        for hit in search_cases(session, term, limit=20):
+            rid = hit["record_id"]
+            if rid in seen:
+                continue
+            seen.add(rid)
+            results.append(hit)
+            if len(results) >= limit:
+                return results
+    return results

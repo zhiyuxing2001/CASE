@@ -8,11 +8,23 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.api import ai as ai_api
 from app.api.deps import get_db
 from app.main import app
 from app.models import (CaseNarrative, Diagnosis, InfoPatient, InfoRecord,
                         Mentor)
 from app.search import rebuild_search_index
+
+
+class _NoKeyRouter:
+    """无 Key 的路由桩，强制走降级分支。"""
+    configured = False
+
+    def primary(self):
+        return {"provider": "deepseek-api", "model": "deepseek-chat"}
+
+    def chat(self, request):
+        return None
 
 
 def _client(engine: Engine) -> TestClient:
@@ -26,7 +38,8 @@ def _client(engine: Engine) -> TestClient:
     return TestClient(app)
 
 
-def test_ai_degrades_without_key(engine: Engine) -> None:
+def test_ai_degrades_without_key(engine: Engine, monkeypatch) -> None:
+    monkeypatch.setattr(ai_api, "get_router", lambda: _NoKeyRouter())
     # 造一条带证型的病案并重建检索索引
     with Session(engine) as session:
         session.add(Mentor(mentor_id="M-AI", mentor_name="测试老师"))

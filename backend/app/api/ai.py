@@ -14,8 +14,8 @@ from .. import schemas
 from ..llm import ChatRequest, Message, Task, get_router
 from ..llm import prompts
 from ..models import (CaseNarrative, Diagnosis, InfoPatient, InfoRecord,
-                      LearningNote)
-from ..search import search_cases
+                      LearningNote, PrescriptionItem, Treatment)
+from ..search import search_cases_multi
 from .deps import get_db
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
@@ -66,6 +66,12 @@ def _case_context(db: Session, case_id: int) -> str:
         InfoPatient.patient_id == record.patient_id))
     narrative = db.get(CaseNarrative, case_id)
     diagnosis = db.get(Diagnosis, case_id)
+    treatment = db.get(Treatment, case_id)
+    herbs = db.execute(
+        select(PrescriptionItem)
+        .where(PrescriptionItem.record_id == case_id)
+        .order_by(PrescriptionItem.sequence)
+    ).scalars().all()
     lines = [f"患者：{patient.patient_name if patient else ''}，"
              f"{record.clinic_date} 就诊"]
     if narrative:
@@ -75,6 +81,16 @@ def _case_context(db: Session, case_id: int) -> str:
     if diagnosis:
         lines.append(f"证型：{diagnosis.syndrome}")
         lines.append(f"辨证分析：{diagnosis.patterns_analysis}")
+    if treatment:
+        lines.append(f"治法：{treatment.treatment_principle}")
+        lines.append(f"方剂：{treatment.formula_name}")
+        if treatment.western_medicine:
+            lines.append(f"西药：{treatment.western_medicine}")
+    if herbs:
+        lines.append("处方：" + "、".join(
+            f"{h.herb_name_norm or h.herb_name}{h.dose or ''}{h.unit or 'g'}"
+            + (f"（{h.decoction_note}）" if h.decoction_note else "")
+            for h in herbs))
     return "\n".join(lines)
 
 
@@ -92,7 +108,7 @@ def status() -> schemas.AiStatus:
 @router.post("/chat", response_model=schemas.AiChatResponse)
 def chat(payload: schemas.AiChatRequest,
          db: Session = Depends(get_db)) -> schemas.AiChatResponse:
-    hits = search_cases(db, payload.question, limit=5)
+    hits = search_cases_multi(db, payload.question, limit=5)
     sources = _sources(db, hits)
     router = get_router()
 
