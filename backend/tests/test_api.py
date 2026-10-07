@@ -212,3 +212,36 @@ def test_western_medicine_and_first_narrative(engine: Engine) -> None:
         assert detail2["first_narrative"]["personal_history"] == "吸烟"
     finally:
         _cleanup()
+
+
+def test_update_record(engine: Engine) -> None:
+    """编辑已有病案：覆盖病史、诊断、治疗与药味，病程结构不变。"""
+    client = _make_client(engine)
+    try:
+        pid = client.post("/api/patients", json={
+            "patient_name": "编辑患者", "gender": True, "birthday": "1970-01-01",
+        }).json()["patient_id"]
+        rid = client.post("/api/records", json={
+            "patient_id": pid, "clinic_date": "2026-01-01",
+            "narrative": {"complaint": "原始主诉"},
+            "diagnosis": {"syndrome": "原始证型"},
+            "herbs": [{"herb_name": "柴胡", "dose": 10, "sequence": 0}],
+        }).json()["record_id"]
+
+        r = client.put(f"/api/records/{rid}", json={
+            "patient_id": pid, "clinic_date": "2026-01-02",
+            "narrative": {"complaint": "更新主诉"},
+            "diagnosis": {"syndrome": "更新证型"},
+            "treatment": {"western_medicine": "甲钴胺 0.5mg tid"},
+            "herbs": [{"herb_name": "白芍", "dose": 15, "sequence": 0}],
+        })
+        assert r.status_code == 200
+
+        detail = client.get(f"/api/records/{rid}").json()
+        assert detail["narrative"]["complaint"] == "更新主诉"
+        assert detail["diagnosis"]["syndrome"] == "更新证型"
+        assert detail["treatment"]["western_medicine"] == "甲钴胺 0.5mg tid"
+        assert [h["herb_name_norm"] for h in detail["herbs"]] == ["白芍"]
+        assert detail["record"]["clinic_date"] == "2026-01-02"
+    finally:
+        _cleanup()

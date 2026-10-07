@@ -13,7 +13,7 @@
 from __future__ import annotations
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 from ulid import ULID
 
@@ -106,3 +106,63 @@ def create_record(db: Session, payload: schemas.RecordCreate) -> int:
 
     db.commit()
     return record.record_id
+
+
+def _apply(obj, data: dict) -> None:
+    """把 payload 字段覆盖到 ORM 对象上（仅覆盖 payload 中的字段）。"""
+    for key, value in data.items():
+        setattr(obj, key, value)
+
+
+def update_record(db: Session, record_id: int,
+                  payload: schemas.RecordCreate) -> int:
+    """编辑已有就诊：覆盖元数据、病史、诊断、治疗，药味整体替换。
+
+    不修改病程结构（patient_id / course_id / father_id / visit_no）。
+    """
+    record = db.get(InfoRecord, record_id)
+    if record is None or record.is_deleted:
+        raise HTTPException(status_code=404, detail="病案不存在")
+
+    record.clinic_date = payload.clinic_date
+    record.visit_type = payload.visit_type
+    record.age = payload.age or 0
+    record.doctor_name = payload.doctor_name
+    record.mentor_id = payload.mentor_id
+    record.department = payload.department
+    record.addr = payload.addr
+
+    narrative = db.get(CaseNarrative, record_id)
+    if narrative is None:
+        narrative = CaseNarrative(record_id=record_id, patient_id=record.patient_id)
+        db.add(narrative)
+    _apply(narrative, payload.narrative.model_dump())
+
+    diagnosis = db.get(Diagnosis, record_id)
+    if diagnosis is None:
+        diagnosis = Diagnosis(record_id=record_id, patient_id=record.patient_id)
+        db.add(diagnosis)
+    _apply(diagnosis, payload.diagnosis.model_dump())
+
+    treatment = db.get(Treatment, record_id)
+    if treatment is None:
+        treatment = Treatment(record_id=record_id, patient_id=record.patient_id)
+        db.add(treatment)
+    _apply(treatment, payload.treatment.model_dump())
+
+    # 药味整体替换
+    db.execute(delete(PrescriptionItem).where(
+        PrescriptionItem.record_id == record_id))
+    for herb in payload.herbs:
+        resolution = resolve_herb(db, herb.herb_name)
+        db.add(PrescriptionItem(
+            record_id=record_id, patient_id=record.patient_id,
+            sequence=herb.sequence, herb_name=herb.herb_name,
+            herb_name_norm=resolution.normalised, herb_id=resolution.herb_id,
+            dose=herb.dose, unit=herb.unit, processing=herb.processing,
+            decoction_note=herb.decoction_note, role=herb.role,
+            needs_review=herb.needs_review, confidence=herb.confidence,
+        ))
+
+    db.commit()
+    return record_id

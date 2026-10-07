@@ -13,7 +13,7 @@ from .. import schemas
 from ..models import (AuditLog, CaseNarrative, Diagnosis, InfoPatient, InfoRecord,
                       Mentor, PrescriptionItem, Treatment)
 from ..search import search_cases
-from ..services.record_service import create_record
+from ..services.record_service import create_record, update_record
 from .deps import get_db
 
 router = APIRouter(prefix="/api/records", tags=["records"])
@@ -253,6 +253,16 @@ def create_record_endpoint(
     db: Session = Depends(get_db),
 ) -> schemas.RecordCreated:
     record_id = create_record(db, payload)
+    return schemas.RecordCreated(record_id=record_id)
+
+
+@router.put("/{record_id}", response_model=schemas.RecordCreated)
+def update_record_endpoint(
+    record_id: int,
+    payload: schemas.RecordCreate,
+    db: Session = Depends(get_db),
+) -> schemas.RecordCreated:
+    update_record(db, record_id, payload)
     return schemas.RecordCreated(record_id=record_id)
 
 
