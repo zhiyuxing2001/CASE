@@ -40,12 +40,19 @@ export interface OcrHerb {
 }
 
 export interface OcrLabResult {
-  category: number
   item_name: string
   result_value: string
   unit: string
   reference_range: string
   abnormal_flag: number
+  needs_review: boolean
+  confidence: number
+}
+
+export interface OcrExam {
+  item_name: string
+  finding: string
+  conclusion: string
   needs_review: boolean
   confidence: number
 }
@@ -56,6 +63,7 @@ export interface OcrStructured {
   treatment: Record<string, string | number | null>
   herbs: OcrHerb[]
   lab_results: OcrLabResult[]
+  exams: OcrExam[]
 }
 
 export interface StructureResult {

@@ -10,6 +10,7 @@ import {
   fetchOcrJob,
   structureOcrJob,
   type OcrCommitPayload,
+  type OcrExam,
   type OcrHerb,
   type OcrLabResult,
   type OcrStructured,
@@ -39,6 +40,7 @@ function emptyStructured(): OcrStructured {
     },
     herbs: [],
     lab_results: [],
+    exams: [],
   }
 }
 
@@ -125,6 +127,12 @@ export function OcrReview() {
     setStructured((s) => ({
       ...s,
       lab_results: s.lab_results.map((l, idx) => (idx === i ? { ...l, ...patch } : l)),
+    }))
+  }
+  function setExam(i: number, patch: Partial<OcrExam>) {
+    setStructured((s) => ({
+      ...s,
+      exams: s.exams.map((e, idx) => (idx === i ? { ...e, ...patch } : e)),
     }))
   }
 
@@ -399,24 +407,16 @@ export function OcrReview() {
                 </Button>
               </div>
 
-              {/* 检验检查 */}
+              {/* 检验 */}
               <div className="space-y-2">
-                <Label>检验检查</Label>
+                <Label>检验结果</Label>
                 <div className="overflow-hidden rounded-lg border">
-                  <div className="grid grid-cols-[6rem_1fr_6rem_5rem_5rem_2rem] gap-2 border-b bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-                    <span>类别</span><span>项目</span><span>结果</span><span>单位</span><span>参考范围</span><span />
+                  <div className="grid grid-cols-[1fr_6rem_5rem_6.5rem_2rem] gap-2 border-b bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                    <span>项目</span><span>结果</span><span>单位</span><span>参考范围</span><span />
                   </div>
                   <div className="divide-y">
                     {structured.lab_results.map((l, i) => (
-                      <div key={i} className={cn("grid grid-cols-[6rem_1fr_6rem_5rem_5rem_2rem] items-center gap-2 px-3 py-1.5", l.needs_review && "bg-amber-500/5")}>
-                        <Select value={String(l.category)} onValueChange={(v) => setLab(i, { category: Number(v) })}>
-                          <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0">检验</SelectItem>
-                            <SelectItem value="1">影像</SelectItem>
-                            <SelectItem value="2">其他</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <div key={i} className={cn("grid grid-cols-[1fr_6rem_5rem_6.5rem_2rem] items-center gap-2 px-3 py-1.5", l.needs_review && "bg-amber-500/5")}>
                         <div className="flex items-center gap-1.5">
                           <Input value={l.item_name} onChange={(e) => setLab(i, { item_name: e.target.value })} />
                           {l.needs_review && <Badge variant="warning" className="shrink-0">待校对</Badge>}
@@ -430,12 +430,45 @@ export function OcrReview() {
                       </div>
                     ))}
                     {structured.lab_results.length === 0 && (
-                      <div className="px-3 py-3 text-sm text-muted-foreground">暂无检验检查（可点击下方添加）</div>
+                      <div className="px-3 py-3 text-sm text-muted-foreground">暂无检验结果（可点击下方添加）</div>
                     )}
                   </div>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={() => setStructured((s) => ({ ...s, lab_results: [...s.lab_results, { category: 0, item_name: "", result_value: "", unit: "", reference_range: "", abnormal_flag: 0, needs_review: false, confidence: 1 }] }))}>
-                  <Plus className="h-4 w-4" /> 添加检验检查
+                <Button type="button" variant="outline" size="sm" onClick={() => setStructured((s) => ({ ...s, lab_results: [...s.lab_results, { item_name: "", result_value: "", unit: "", reference_range: "", abnormal_flag: 0, needs_review: false, confidence: 1 }] }))}>
+                  <Plus className="h-4 w-4" /> 添加检验
+                </Button>
+              </div>
+
+              {/* 检查 */}
+              <div className="space-y-2">
+                <Label>检查报告</Label>
+                <div className="overflow-hidden rounded-lg border">
+                  <div className="grid grid-cols-[1fr_1fr_2rem] gap-2 border-b bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                    <span>检查名称</span><span>所见 / 结论</span><span />
+                  </div>
+                  <div className="divide-y">
+                    {structured.exams.map((e, i) => (
+                      <div key={i} className={cn("grid grid-cols-[1fr_1fr_2rem] items-center gap-2 px-3 py-1.5", e.needs_review && "bg-amber-500/5")}>
+                        <div className="flex items-center gap-1.5">
+                          <Input value={e.item_name} onChange={(ev) => setExam(i, { item_name: ev.target.value })} placeholder="如 胸部CT" />
+                          {e.needs_review && <Badge variant="warning" className="shrink-0">待校对</Badge>}
+                        </div>
+                        <div className="space-y-1">
+                          <Input value={e.finding} onChange={(ev) => setExam(i, { finding: ev.target.value })} placeholder="所见" />
+                          <Input value={e.conclusion} onChange={(ev) => setExam(i, { conclusion: ev.target.value })} placeholder="结论" />
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setStructured((s) => ({ ...s, exams: s.exams.filter((_, j) => j !== i) }))}>
+                          <Trash2 className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </div>
+                    ))}
+                    {structured.exams.length === 0 && (
+                      <div className="px-3 py-3 text-sm text-muted-foreground">暂无检查（可点击下方添加）</div>
+                    )}
+                  </div>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => setStructured((s) => ({ ...s, exams: [...s.exams, { item_name: "", finding: "", conclusion: "", needs_review: false, confidence: 1 }] }))}>
+                  <Plus className="h-4 w-4" /> 添加检查
                 </Button>
               </div>
 

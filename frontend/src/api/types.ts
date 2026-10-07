@@ -121,12 +121,19 @@ export interface HerbItem {
 
 export interface LabResultItem {
   result_id: number
-  category: number
   item_name: string
   result_value: string
   unit: string
   reference_range: string
   abnormal_flag: number
+  needs_review: boolean
+}
+
+export interface ExamItem {
+  exam_id: number
+  item_name: string
+  finding: string
+  conclusion: string
   needs_review: boolean
 }
 
@@ -148,6 +155,7 @@ export interface RecordDetail {
   treatment: Record<string, string | number | null>
   herbs: HerbItem[]
   lab_results: LabResultItem[]
+  exams: ExamItem[]
   course: CourseVisit[]
 }
 

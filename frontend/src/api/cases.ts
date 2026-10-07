@@ -104,12 +104,17 @@ export interface HerbPayload {
 }
 
 export interface LabResultPayload {
-  category: number
   item_name: string
   result_value?: string
   unit?: string
   reference_range?: string
   abnormal_flag?: number
+}
+
+export interface ExamPayload {
+  item_name: string
+  finding?: string
+  conclusion?: string
 }
 
 export interface RecordCreatePayload {
@@ -126,6 +131,7 @@ export interface RecordCreatePayload {
   treatment: Record<string, string | number | null>
   herbs: HerbPayload[]
   lab_results?: LabResultPayload[]
+  exams?: ExamPayload[]
 }
 
 export function createPatient(

@@ -18,7 +18,6 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
 const VISIT_TYPE: Record<number, string> = { 0: "初诊", 1: "复诊", 2: "随访" }
-const LAB_CATEGORY: Record<number, string> = { 0: "检验", 1: "影像", 2: "其他" }
 const ABNORMAL: Record<number, string> = { 0: "", 1: "↑", 2: "↓" }
 const TABLE_CN: Record<string, string> = {
   info_record: "就诊信息",
@@ -26,7 +25,8 @@ const TABLE_CN: Record<string, string> = {
   diagnosis: "诊断",
   treatment: "治疗",
   prescription_item: "药味",
-  lab_result: "检验检查",
+  lab_result: "检验",
+  exam_report: "检查",
 }
 const ACTION_CN: Record<number, string> = { 0: "新增", 1: "修改", 2: "删除", 3: "恢复", 4: "脱敏" }
 
@@ -334,14 +334,13 @@ export function CaseDetail() {
             <KV label="其他治疗" value={data.treatment.other_treatment as string} />
           </Section>
 
-          {/* 检验检查 */}
+          {/* 检验 */}
           {data.lab_results.length > 0 && (
-            <Section title="检验检查">
+            <Section title="检验结果">
               <div className="py-2">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-left text-xs text-muted-foreground">
-                      <th className="py-1.5 pr-2 font-medium">类别</th>
                       <th className="py-1.5 pr-2 font-medium">项目</th>
                       <th className="py-1.5 pr-2 font-medium">结果</th>
                       <th className="py-1.5 pr-2 font-medium">单位</th>
@@ -351,7 +350,6 @@ export function CaseDetail() {
                   <tbody>
                     {data.lab_results.map((l) => (
                       <tr key={l.result_id} className="border-b last:border-0">
-                        <td className="py-1.5 pr-2 text-muted-foreground">{LAB_CATEGORY[l.category] ?? l.category}</td>
                         <td className="py-1.5 pr-2 font-medium">
                           {l.item_name}
                           {l.needs_review && <Badge variant="warning" className="ml-1.5">待校对</Badge>}
@@ -368,6 +366,24 @@ export function CaseDetail() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </Section>
+          )}
+
+          {/* 检查 */}
+          {data.exams.length > 0 && (
+            <Section title="检查报告">
+              <div className="space-y-3 py-1">
+                {data.exams.map((e) => (
+                  <div key={e.exam_id} className="rounded-lg border p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{e.item_name}</span>
+                      {e.needs_review && <Badge variant="warning">待校对</Badge>}
+                    </div>
+                    {e.finding && <p className="mt-1.5 text-sm"><span className="text-muted-foreground">所见：</span>{e.finding}</p>}
+                    {e.conclusion && <p className="mt-1 text-sm"><span className="text-muted-foreground">结论：</span>{e.conclusion}</p>}
+                  </div>
+                ))}
               </div>
             </Section>
           )}

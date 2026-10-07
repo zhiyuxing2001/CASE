@@ -35,7 +35,6 @@ interface HerbRow {
 }
 
 interface LabRow {
-  category: string
   item_name: string
   result_value: string
   unit: string
@@ -43,10 +42,17 @@ interface LabRow {
   abnormal_flag: string
 }
 
+interface ExamRow {
+  item_name: string
+  finding: string
+  conclusion: string
+}
+
 const EMPTY_LAB: LabRow = {
-  category: "0", item_name: "", result_value: "", unit: "",
+  item_name: "", result_value: "", unit: "",
   reference_range: "", abnormal_flag: "0",
 }
+const EMPTY_EXAM: ExamRow = { item_name: "", finding: "", conclusion: "" }
 
 const EMPTY_HERB: HerbRow = {
   herb_name: "", dose: "", unit: "g", processing: "", decoction_note: "", role: "",
@@ -120,6 +126,7 @@ export function CaseEntry() {
 
   const [herbs, setHerbs] = useState<HerbRow[]>([{ ...EMPTY_HERB }])
   const [labResults, setLabResults] = useState<LabRow[]>([])
+  const [exams, setExams] = useState<ExamRow[]>([])
 
   const { data: mentors = [] } = useQuery({ queryKey: ["mentors"], queryFn: fetchMentors })
   const { data: followUpPatient } = useQuery({
@@ -186,12 +193,16 @@ export function CaseEntry() {
     }))
     setHerbs(herbRows.length ? herbRows : [{ ...EMPTY_HERB }])
     setLabResults(editRecord.lab_results.map((l) => ({
-      category: String(l.category),
       item_name: l.item_name,
       result_value: l.result_value,
       unit: l.unit,
       reference_range: l.reference_range,
       abnormal_flag: String(l.abnormal_flag),
+    })))
+    setExams(editRecord.exams.map((e) => ({
+      item_name: e.item_name,
+      finding: e.finding,
+      conclusion: e.conclusion,
     })))
   }, [editRecord])
 
@@ -252,12 +263,18 @@ export function CaseEntry() {
         lab_results: labResults
           .filter((l) => l.item_name.trim())
           .map((l) => ({
-            category: Number(l.category),
             item_name: l.item_name.trim(),
             result_value: l.result_value,
             unit: l.unit,
             reference_range: l.reference_range,
             abnormal_flag: Number(l.abnormal_flag),
+          })),
+        exams: exams
+          .filter((e) => e.item_name.trim())
+          .map((e) => ({
+            item_name: e.item_name.trim(),
+            finding: e.finding,
+            conclusion: e.conclusion,
           })),
       }
       if (isEdit) return updateRecord(Number(editRecordId), payload)
@@ -301,6 +318,10 @@ export function CaseEntry() {
 
   function updateLab(index: number, patch: Partial<LabRow>) {
     setLabResults((rows) => rows.map((r, i) => (i === index ? { ...r, ...patch } : r)))
+  }
+
+  function updateExam(index: number, patch: Partial<ExamRow>) {
+    setExams((rows) => rows.map((r, i) => (i === index ? { ...r, ...patch } : r)))
   }
 
   return (
@@ -629,27 +650,19 @@ export function CaseEntry() {
         </CardContent>
       </Card>
 
-      {/* 检验检查 */}
+      {/* 检验 */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">检验检查</CardTitle>
+          <CardTitle className="text-base">检验结果</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="overflow-hidden rounded-lg border">
-            <div className="grid grid-cols-[5.5rem_1fr_1fr_5.5rem_6.5rem_5.5rem_2rem] gap-2 border-b bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-              <span>类别</span><span>项目</span><span>结果</span><span>单位</span><span>参考范围</span><span>异常</span><span />
+            <div className="grid grid-cols-[1fr_1fr_5.5rem_6.5rem_5.5rem_2rem] gap-2 border-b bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+              <span>项目</span><span>结果</span><span>单位</span><span>参考范围</span><span>异常</span><span />
             </div>
             <div className="divide-y">
               {labResults.map((row, i) => (
-                <div key={i} className="grid grid-cols-[5.5rem_1fr_1fr_5.5rem_6.5rem_5.5rem_2rem] items-center gap-2 px-3 py-1.5">
-                  <Select value={row.category} onValueChange={(v) => updateLab(i, { category: v })}>
-                    <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">检验</SelectItem>
-                      <SelectItem value="1">影像</SelectItem>
-                      <SelectItem value="2">其他</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div key={i} className="grid grid-cols-[1fr_1fr_5.5rem_6.5rem_5.5rem_2rem] items-center gap-2 px-3 py-1.5">
                   <Input value={row.item_name} onChange={(e) => updateLab(i, { item_name: e.target.value })} placeholder="如 白细胞计数" />
                   <Input value={row.result_value} onChange={(e) => updateLab(i, { result_value: e.target.value })} placeholder="如 12.5" />
                   <Input value={row.unit} onChange={(e) => updateLab(i, { unit: e.target.value })} placeholder="如 10^9/L" />
@@ -669,13 +682,49 @@ export function CaseEntry() {
                 </div>
               ))}
               {labResults.length === 0 && (
-                <div className="px-3 py-3 text-sm text-muted-foreground">暂无检验检查（可点击下方添加）</div>
+                <div className="px-3 py-3 text-sm text-muted-foreground">暂无检验结果（可点击下方添加）</div>
               )}
             </div>
           </div>
           <Button type="button" variant="outline" size="sm"
             onClick={() => setLabResults((rows) => [...rows, { ...EMPTY_LAB }])}>
-            <Plus className="h-4 w-4" /> 添加检验检查
+            <Plus className="h-4 w-4" /> 添加检验
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* 检查 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">检查报告</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="overflow-hidden rounded-lg border">
+            <div className="grid grid-cols-[1fr_1.5fr_2rem] gap-2 border-b bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+              <span>检查名称</span><span>所见 / 结论</span><span />
+            </div>
+            <div className="divide-y">
+              {exams.map((row, i) => (
+                <div key={i} className="grid grid-cols-[1fr_1.5fr_2rem] items-center gap-2 px-3 py-1.5">
+                  <Input value={row.item_name} onChange={(e) => updateExam(i, { item_name: e.target.value })} placeholder="如 胸部CT平扫" />
+                  <div className="space-y-1">
+                    <Input value={row.finding} onChange={(e) => updateExam(i, { finding: e.target.value })} placeholder="检查所见" />
+                    <Input value={row.conclusion} onChange={(e) => updateExam(i, { conclusion: e.target.value })} placeholder="结论/诊断意见" />
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8"
+                    onClick={() => setExams((rows) => rows.filter((_, j) => j !== i))}>
+                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </div>
+              ))}
+              {exams.length === 0 && (
+                <div className="px-3 py-3 text-sm text-muted-foreground">暂无检查（可点击下方添加）</div>
+              )}
+            </div>
+          </div>
+          <Button type="button" variant="outline" size="sm"
+            onClick={() => setExams((rows) => [...rows, { ...EMPTY_EXAM }])}>
+            <Plus className="h-4 w-4" /> 添加检查
           </Button>
         </CardContent>
       </Card>
