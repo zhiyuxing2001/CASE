@@ -9,7 +9,7 @@ from __future__ import annotations
 import base64
 import json
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 from ulid import ULID
@@ -18,8 +18,10 @@ from .. import schemas
 from ..config import settings
 from ..llm import ChatRequest, Message, Task, get_router, parse_json
 from ..llm import prompts
-from ..models import Attachment, CaseNarrative, InfoPatient, OcrJob
+from ..models import (Attachment, CaseNarrative, DictTemplate, InfoPatient,
+                      OcrJob)
 from ..ocr import lines_to_display, run_vision
+from ..ocr.template import extract_fields
 from ..services.record_service import create_record
 from .deps import get_db
 
@@ -30,6 +32,44 @@ def _image_data_url(attachment: Attachment, path) -> str:
     mime = attachment.mime_type or "image/jpeg"
     encoded = base64.b64encode(path.read_bytes()).decode("ascii")
     return f"data:{mime};base64,{encoded}"
+
+
+def _flat_to_structured(flat: dict[str, str]) -> schemas.OcrStructured:
+    """把 {字段路径: 值} 映射为 OcrStructured 嵌套结构。"""
+    narrative = schemas.NarrativeCreate()
+    diagnosis = schemas.DiagnosisCreate()
+    treatment = schemas.TreatmentCreate()
+    for path, value in flat.items():
+        parts = path.split(".")
+        if len(parts) != 2:
+            continue
+        group, field = parts
+        target = {"narrative": narrative, "diagnosis": diagnosis,
+                  "treatment": treatment}.get(group)
+        if target is None:
+            continue
+        if field == "dose_count":
+            try:
+                target.dose_count = int(str(value))
+            except (ValueError, TypeError):
+                continue
+        else:
+            setattr(target, field, value)
+    return schemas.OcrStructured(narrative=narrative, diagnosis=diagnosis,
+                                 treatment=treatment)
+
+
+def _template_hint(template: DictTemplate) -> str:
+    anchors = template.field_anchors or []
+    cols = template.table_columns or []
+    parts = [f"这是「{template.name}」界面的结构："]
+    if anchors:
+        parts.append("文字结构（标签 → 字段）：" + "；".join(
+            f"{a.get('label', '')}→{a.get('field', '')}" for a in anchors))
+    if cols:
+        parts.append("表格列（表头 → 字段）：" + "；".join(
+            f"{c.get('label', '')}→{c.get('field', '')}" for c in cols))
+    return "\n".join(parts)
 
 
 def _job_out(job: OcrJob, raw_lines: list) -> schemas.OcrJobOut:
@@ -94,10 +134,12 @@ def get_job(job_id: str, db: Session = Depends(get_db)) -> schemas.OcrJobOut:
 @router.post("/jobs/{job_id}/structure", response_model=schemas.StructureResult)
 def structure_job(
     job_id: str,
+    template_id: str | None = Query(None),
     db: Session = Depends(get_db),
 ) -> schemas.StructureResult:
     """通道 B：用 DeepSeek 视觉模型把通道 A 的文本结构化为字段。
 
+    可选传入 template_id，把界面模板的结构注入提示词以提升准确度。
     无 Key 时降级返回空结构；解析失败记录到 job.error_message 并报错。
     """
     job = db.get(OcrJob, job_id)
@@ -122,10 +164,16 @@ def structure_job(
     if not router.configured:
         return empty
 
+    user_prompt = prompts.ocr_structuring_user(job.vision_text or "")
+    if template_id:
+        template = db.get(DictTemplate, template_id)
+        if template is not None:
+            user_prompt = _template_hint(template) + "\n\n" + user_prompt
+
     data_url = _image_data_url(attachment, path)
     messages = [
         Message("system", prompts.SYSTEM_OCR_STRUCTURING),
-        Message("user", prompts.ocr_structuring_user(job.vision_text or "")),
+        Message("user", user_prompt),
     ]
     resp = router.chat(ChatRequest(
         task=Task.OCR_STRUCTURING,
@@ -158,6 +206,35 @@ def structure_job(
         structured=structured, model=resp.model,
         prompt_version=prompts.PROMPT_VERSION,
         degraded=False, ai_configured=True,
+    )
+
+
+@router.post("/jobs/{job_id}/extract", response_model=schemas.StructureResult)
+def extract_job(
+    job_id: str,
+    payload: schemas.TemplateExtractRequest,
+    db: Session = Depends(get_db),
+) -> schemas.StructureResult:
+    """按界面模板从通道 A 文本中提取字段（无 AI 的本地通道）。
+
+    依据模板的 field_anchors（标签→字段）按“标签：值”模式提取，作为人工
+    校对的预填，不依赖 API Key。
+    """
+    job = db.get(OcrJob, job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="作业不存在")
+    if job.status != 2:
+        raise HTTPException(status_code=400, detail="通道 A 尚未完成，无法提取")
+    template = db.get(DictTemplate, payload.template_id)
+    if template is None or template.is_active is False:
+        raise HTTPException(status_code=404, detail="模板不存在")
+
+    lines = job.vision_json or []
+    flat = extract_fields(lines, template.field_anchors or [])
+    structured = _flat_to_structured(flat)
+    return schemas.StructureResult(
+        structured=structured, model="template-extract", prompt_version="",
+        degraded=False, ai_configured=False,
     )
 
 

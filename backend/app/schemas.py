@@ -598,3 +598,27 @@ class NoteBatchRequest(BaseModel):
 
 class NoteBatchResult(BaseModel):
     deleted: int
+
+
+class TemplateAnchor(BaseModel):
+    label: str
+    field: str
+
+
+class TemplateUpsert(BaseModel):
+    name: str
+    doc_type: int = 0
+    field_anchors: list[TemplateAnchor] = Field(default_factory=list)
+    table_columns: list[TemplateAnchor] = Field(default_factory=list)
+
+
+class TemplateOut(BaseModel):
+    template_id: str
+    name: str
+    doc_type: int
+    field_anchors: list[TemplateAnchor]
+    table_columns: list[TemplateAnchor]
+
+
+class TemplateExtractRequest(BaseModel):
+    template_id: str

@@ -469,6 +469,29 @@ TABLES: list[dict] = [
              "0为停用，1为启用"),
         ],
     },
+    {
+        "sheet": "08 界面模板表",
+        "cn": "界面模板表",
+        "en": "dict_template",
+        "note": "固化特定 HIS 界面的文字结构与表格列，供 OCR 结构化提示与"
+                "本地“按模板提取”使用，以提升固定界面的识别准确度。",
+        "fields": [
+            ("template_id", "模板编号", "TEXT", "PRIMARY KEY",
+             "计算机生成：以ULID方式生成唯一编号"),
+            ("name", "模板名", "TEXT", "NOT NULL",
+             "必填，如“HIS 病历界面”“HIS 医嘱界面”"),
+            ("doc_type", "单据类型", "UNSIGNED TINYINT", "NOT NULL DEFAULT 0",
+             "0为病历，1为医嘱/处方，2为其他；详见附表A11"),
+            ("field_anchors", "文字结构", "JSON", "DEFAULT '[]'",
+             "列表[{label, field}]，标签→字段路径，如 "
+             "[{label:\"主诉\", field:\"narrative.complaint\"}]"),
+            ("table_columns", "表格列", "JSON", "DEFAULT '[]'",
+             "列表[{header, field}]，表头→字段路径，用于医嘱/处方表格解析"),
+            ("is_active", "是否启用", "BOOLEAN", "DEFAULT 1",
+             "0为停用，1为启用"),
+            CREATED_AT,
+        ],
+    },
 
     # ================= 五、跟师学习 =================
     {
@@ -826,7 +849,7 @@ GROUPS: dict[str, list[str]] = {
     "二、病案主体": ["case_narrative"],
     "三、诊断与治疗": ["diagnosis", "treatment", "prescription_item"],
     "四、字典": ["dict_herb", "dict_herb_alias", "dict_syndrome",
-                 "dict_formula", "dict_term"],
+                 "dict_formula", "dict_term", "dict_template"],
     "五、跟师学习": ["learning_note", "mentor_comment", "note_record_link"],
     "六、来源与溯源": ["source_document", "attachment", "ocr_job",
                        "ocr_field_confidence"],

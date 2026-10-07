@@ -10,7 +10,7 @@ similarity against ``dict_herb_alias`` can suggest the fix.
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, Text
+from sqlalchemy import JSON, Boolean, Column, ForeignKey, Integer, Text
 
 from .base import Base, CreatedAtMixin
 from .types import UnsignedTinyInt
@@ -124,4 +124,25 @@ class DictTerm(Base):
     description = Column(Text, nullable=False, default="", doc="说明")
     usage_count = Column(Integer, nullable=False, default=0,
                          doc="使用频次，用于录入联想排序")
+    is_active = Column(Boolean, nullable=False, default=True, doc="是否启用")
+
+
+class DictTemplate(CreatedAtMixin, Base):
+    """界面模板表 — 特定 HIS 界面的结构，用于提升 OCR 识别准确度。
+
+    常年跟诊同一家医院时，HIS 界面相对固定：病历界面的文字结构（如
+    “主诉：”“现病史：”等标签及其顺序）与医嘱界面的表格列。把这些结构
+    固化为模板，供通道 B 结构化提示与本地“按模板提取”使用。
+    """
+
+    __tablename__ = "dict_template"
+
+    template_id = Column(Text, primary_key=True, doc="模板编号，ULID")
+    name = Column(Text, nullable=False, doc="模板名，如“HIS 病历界面”")
+    doc_type = Column(UnsignedTinyInt, nullable=False, default=0,
+                      doc="单据类型，详见附表A11")
+    field_anchors = Column(JSON, nullable=False, default=list,
+                           doc="文字结构：[{label, field}]，标签→字段路径")
+    table_columns = Column(JSON, nullable=False, default=list,
+                           doc="表格列：[{header, field}]，表头→字段路径")
     is_active = Column(Boolean, nullable=False, default=True, doc="是否启用")

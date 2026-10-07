@@ -7,7 +7,7 @@ is what Alembic autogenerate and the DDL drift check rely on.
 from .base import Base, CreatedAtMixin, SoftDeleteMixin, TimestampsMixin
 from .clinical import (CaseNarrative, Diagnosis, PrescriptionItem, Treatment)
 from .dictionary import (DictFormula, DictHerb, DictHerbAlias, DictSyndrome,
-                         DictTerm)
+                         DictTemplate, DictTerm)
 from .learning import LearningNote, MentorComment, NoteRecordLink
 from .master import InfoPatient, InfoRecord, Mentor
 from .provenance import (Attachment, OcrFieldConfidence, OcrJob,
@@ -36,6 +36,7 @@ __all__ = [
     "DictSyndrome",
     "DictFormula",
     "DictTerm",
+    "DictTemplate",
     # 跟师学习
     "LearningNote",
     "MentorComment",
