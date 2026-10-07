@@ -101,6 +101,10 @@ class Mentor(SoftDeleteMixin, TimestampsMixin, Base):
     affiliation = Column(Text, nullable=False, default="", doc="所属机构")
     department = Column(Text, nullable=False, default="", doc="所属科室")
     expertise = Column(Text, nullable=False, default="", doc="擅长领域")
+    clinic_time = Column(Text, nullable=False, default="", doc="出诊时间，如“周二、四上午”")
+    clinic_location = Column(Text, nullable=False, default="",
+                             doc="出诊地点，如“门诊楼3层303室”")
+    bio = Column(Text, nullable=False, default="", doc="导师简介")
     is_primary = Column(Boolean, nullable=False, default=False,
                         doc="是否主带教")
     notes = Column(Text, nullable=False, default="", doc="备注")

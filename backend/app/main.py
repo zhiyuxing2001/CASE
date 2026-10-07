@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import __version__, schemas
 from .api import (admin, ai, analytics, attachments, courses, dictionary,
-                  learning, meta, ocr, records, search,
+                  learning, mentors, meta, ocr, records, search,
                   settings as settings_router, templates)
 from .config import settings
 from .llm import get_router
@@ -37,6 +37,7 @@ def create_app() -> FastAPI:
     app.include_router(search.router)
     app.include_router(dictionary.router)
     app.include_router(meta.router)
+    app.include_router(mentors.router)
     app.include_router(attachments.router)
     app.include_router(ocr.router)
     app.include_router(learning.router)

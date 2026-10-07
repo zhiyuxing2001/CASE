@@ -622,3 +622,58 @@ class TemplateOut(BaseModel):
 
 class TemplateExtractRequest(BaseModel):
     template_id: str
+
+
+class MentorUpsert(BaseModel):
+    mentor_name: str
+    title: str = ""
+    affiliation: str = ""
+    department: str = ""
+    expertise: str = ""
+    clinic_time: str = ""
+    clinic_location: str = ""
+    bio: str = ""
+    is_primary: bool = False
+    notes: str = ""
+
+
+class MentorSummary(BaseModel):
+    mentor_id: str
+    mentor_name: str
+    title: str
+    department: str
+    expertise: str
+    is_primary: bool
+    visit_count: int
+    note_count: int
+
+
+class MentorSyndrome(BaseModel):
+    syndrome: str
+    count: int
+
+
+class MentorRecordBrief(BaseModel):
+    record_id: int
+    patient_name: str
+    clinic_date: str
+    complaint: str
+    syndrome: str
+
+
+class MentorDetail(BaseModel):
+    mentor_id: str
+    mentor_name: str
+    title: str
+    affiliation: str
+    department: str
+    expertise: str
+    clinic_time: str
+    clinic_location: str
+    bio: str
+    is_primary: bool
+    notes: str
+    visit_count: int
+    note_count: int
+    top_syndromes: list[MentorSyndrome]
+    recent_records: list[MentorRecordBrief]

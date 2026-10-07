@@ -1,4 +1,4 @@
-"""元数据路由：带教老师与患者（供筛选与联想）。"""
+"""元数据路由：患者（供筛选与联想）。导师见 api/mentors。"""
 
 from __future__ import annotations
 
@@ -8,24 +8,10 @@ from sqlalchemy.orm import Session
 from ulid import ULID
 
 from .. import schemas
-from ..models import InfoPatient, Mentor
+from ..models import InfoPatient
 from .deps import get_db
 
 router = APIRouter(prefix="/api", tags=["meta"])
-
-
-@router.get("/mentors", response_model=list[schemas.MentorOption])
-def list_mentors(db: Session = Depends(get_db)):
-    rows = db.execute(
-        select(Mentor)
-        .where(Mentor.is_deleted.is_(False))
-        .order_by(Mentor.is_primary.desc(), Mentor.mentor_name)
-    ).scalars().all()
-    return [
-        schemas.MentorOption(mentor_id=m.mentor_id, mentor_name=m.mentor_name,
-                             title=m.title)
-        for m in rows
-    ]
 
 
 @router.get("/patients", response_model=list[schemas.PatientOption])
