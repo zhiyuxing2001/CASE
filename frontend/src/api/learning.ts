@@ -126,3 +126,29 @@ export function addComment(
 export function fetchProgress(): Promise<ProgressOut> {
   return getJSON<ProgressOut>("/api/learning/progress")
 }
+
+export function deleteNotes(noteIds: string[]): Promise<{ deleted: number }> {
+  return postJSON<{ deleted: number }>("/api/learning/notes/delete", { note_ids: noteIds })
+}
+
+export async function exportNotes(noteIds: string[]): Promise<void> {
+  const res = await fetch("/api/learning/notes/export", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ note_ids: noteIds }),
+  })
+  if (!res.ok) {
+    throw new Error(`导出失败 (${res.status})`)
+  }
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  const cd = res.headers.get("Content-Disposition") ?? ""
+  const match = /filename="?([^"]+)"?/.exec(cd)
+  a.download = match?.[1] ?? "notes.docx"
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
