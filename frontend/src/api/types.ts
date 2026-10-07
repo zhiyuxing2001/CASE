@@ -124,6 +124,8 @@ export interface CourseVisit {
   clinic_date: string
   visit_no: number
   visit_type: number
+  complaint: string
+  syndrome: string
 }
 
 export interface RecordDetail {
