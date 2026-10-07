@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom"
 
+import { CaseLogo } from "@/components/case-logo"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { NAV_GROUPS } from "./nav-config"
@@ -9,15 +10,15 @@ export function Sidebar() {
     <aside className="flex h-full w-64 shrink-0 flex-col border-r bg-white">
       {/* 品牌区 */}
       <div className="flex h-16 items-center gap-3 border-b px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <span className="font-serif text-base font-bold">案</span>
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-sm">
+          <CaseLogo className="h-6 w-6" />
         </div>
         <div className="flex flex-col">
           <span className="text-sm font-semibold leading-tight tracking-wide">
             CASE
           </span>
           <span className="text-xs text-muted-foreground">
-            中医跟诊病案
+            中医跟师病案
           </span>
         </div>
       </div>
