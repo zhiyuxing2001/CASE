@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -17,6 +19,17 @@ from .deps import get_db
 router = APIRouter(prefix="/api/dict", tags=["dict"])
 
 
+def _pinyin_initials(pinyin: str) -> str:
+    """拼音首字母，如“fa ban xia” → “fbx”。"""
+    parts = re.split(r"[\s-]+", (pinyin or "").strip())
+    return "".join(p[0] for p in parts if p)
+
+
+def _pinyin_compact(pinyin: str) -> str:
+    """去掉分隔符的拼音，如“gui zhi” → “guizhi”。"""
+    return re.sub(r"[\s-]+", "", (pinyin or "")).lower()
+
+
 @router.get("/herbs", response_model=list[schemas.HerbOption])
 def list_herbs(
     q: str = "",
@@ -26,16 +39,33 @@ def list_herbs(
     db: Session = Depends(get_db),
 ):
     stmt = select(DictHerb).where(DictHerb.is_active.is_(True))
-    if q:
-        stmt = stmt.where(or_(
-            DictHerb.herb_name.like(f"%{q}%"),
-            DictHerb.pinyin.like(f"%{q.lower()}%"),
-        ))
     if category:
         stmt = stmt.where(DictHerb.category == category)
     if is_processed is not None:
         stmt = stmt.where(DictHerb.is_processed.is_(is_processed))
-    herbs = db.execute(stmt.order_by(DictHerb.is_common.desc(), DictHerb.herb_name).limit(limit)).scalars().all()
+    if q:
+        ql = q.strip().lower()
+        if re.fullmatch(r"[a-z]+", ql):
+            # 纯字母：按拼音全拼或首字母匹配（如 fbx → 法半夏）
+            rows = db.execute(stmt).scalars().all()
+            rows = [h for h in rows if
+                    ql in (h.pinyin or "").lower()
+                    or ql in _pinyin_compact(h.pinyin)
+                    or ql in _pinyin_initials(h.pinyin or "").lower()]
+            rows.sort(key=lambda h: (not bool(h.is_common), h.herb_name))
+            herbs = rows[:limit]
+        else:
+            stmt = stmt.where(or_(
+                DictHerb.herb_name.like(f"%{q}%"),
+                DictHerb.pinyin.like(f"%{ql}%"),
+            ))
+            herbs = db.execute(
+                stmt.order_by(DictHerb.is_common.desc(), DictHerb.herb_name)
+                .limit(limit)).scalars().all()
+    else:
+        herbs = db.execute(
+            stmt.order_by(DictHerb.is_common.desc(), DictHerb.herb_name)
+            .limit(limit)).scalars().all()
     return [
         schemas.HerbOption(
             herb_id=h.herb_id, herb_name=h.herb_name, pinyin=h.pinyin,

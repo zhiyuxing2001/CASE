@@ -385,3 +385,22 @@ def test_auto_collect_dictionary_on_create(engine: Engine) -> None:
                    for t in terms)
     finally:
         _cleanup()
+
+
+def test_herb_search_by_pinyin_initials(engine: Engine) -> None:
+    """药名可按拼音首字母检索。"""
+    client = _make_client(engine)
+    try:
+        r = client.post("/api/dict/herbs", json={
+            "herb_name": "法半夏", "pinyin": "fa ban xia",
+        })
+        assert r.status_code == 201
+
+        # 首字母 fbx
+        hit = client.get("/api/dict/herbs", params={"q": "fbx"}).json()
+        assert any(h["herb_name"] == "法半夏" for h in hit)
+        # 去空格全拼
+        hit2 = client.get("/api/dict/herbs", params={"q": "fabanxia"}).json()
+        assert any(h["herb_name"] == "法半夏" for h in hit2)
+    finally:
+        _cleanup()
