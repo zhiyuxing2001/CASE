@@ -20,7 +20,8 @@ from ulid import ULID
 from .. import schemas
 from ..dictionary import collect_dictionary, resolve_herb
 from ..models import (CaseNarrative, Diagnosis, ExamReport, InfoPatient,
-                      InfoRecord, LabResult, PrescriptionItem, Treatment)
+                      InfoRecord, LabResult, PrescriptionItem, Treatment,
+                      WesternMedicineItem)
 
 
 def create_record(db: Session, payload: schemas.RecordCreate) -> int:
@@ -122,6 +123,14 @@ def create_record(db: Session, payload: schemas.RecordCreate) -> int:
             needs_review=exam.needs_review, confidence=exam.confidence,
         ))
 
+    for wm in payload.western_medicines:
+        db.add(WesternMedicineItem(
+            record_id=record.record_id, patient_id=payload.patient_id,
+            drug_name=wm.drug_name, dose=wm.dose, route=wm.route,
+            frequency=wm.frequency, days=wm.days,
+            needs_review=wm.needs_review, confidence=wm.confidence,
+        ))
+
     collect_dictionary(db, payload)  # 半自动收集新药名/证型/术语
 
     db.commit()
@@ -171,7 +180,8 @@ def update_record(db: Session, record_id: int,
     _apply(treatment, payload.treatment.model_dump())
 
     _replace_clinical_items(db, record, payload.herbs,
-                            payload.lab_results, payload.exams)
+                            payload.lab_results, payload.exams,
+                            payload.western_medicines)
 
     collect_dictionary(db, payload)  # 半自动收集新药名/证型/术语
 
@@ -180,8 +190,9 @@ def update_record(db: Session, record_id: int,
 
 
 def _replace_clinical_items(db: Session, record: InfoRecord,
-                            herbs, lab_results, exams) -> None:
-    """整体替换药味、检验与检查（不触碰病史/诊断/治疗元数据）。"""
+                            herbs, lab_results, exams,
+                            western_medicines) -> None:
+    """整体替换药味、检验、检查与西药（不触碰病史/诊断/治疗元数据）。"""
     rid = record.record_id
     pid = record.patient_id
 
@@ -217,6 +228,16 @@ def _replace_clinical_items(db: Session, record: InfoRecord,
             needs_review=exam.needs_review, confidence=exam.confidence,
         ))
 
+    db.execute(delete(WesternMedicineItem).where(
+        WesternMedicineItem.record_id == rid))
+    for wm in western_medicines:
+        db.add(WesternMedicineItem(
+            record_id=rid, patient_id=pid,
+            drug_name=wm.drug_name, dose=wm.dose, route=wm.route,
+            frequency=wm.frequency, days=wm.days,
+            needs_review=wm.needs_review, confidence=wm.confidence,
+        ))
+
 
 def review_record(db: Session, record_id: int,
                   payload: schemas.RecordReviewRequest) -> int:
@@ -228,7 +249,7 @@ def review_record(db: Session, record_id: int,
     if record is None or record.is_deleted:
         raise HTTPException(status_code=404, detail="病案不存在")
 
-    _replace_clinical_items(db, record, payload.herbs,
-                            payload.lab_results, payload.exams)
+    _replace_clinical_items(db, record, payload.herbs, payload.lab_results,
+                            payload.exams, payload.western_medicines)
     db.commit()
     return record_id

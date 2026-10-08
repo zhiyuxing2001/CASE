@@ -29,6 +29,7 @@ SYSTEM_OCR_STRUCTURING = """你是一名资深中医病案结构化助手。你�
 8. 手写或低置信度内容 needs_review=true，confidence 用 0~1 估计（手写约 0.3，印刷清晰约 1.0）。
 9. 检验结果：化验单中的项目逐行存入 lab_results，记 test_name（检验名称，如“血常规”“肝功能”，同一张化验单下的项目用相同名称）、item_name（项目）、result_value（结果）、unit（单位）、reference_range（参考范围）；结果高于参考范围上界时 abnormal_flag=1、低于下界时 abnormal_flag=2、正常为 0。识别不清标 needs_review=true。没有化验则输出空数组。
 10. 检查报告：影像/超声/内镜等检查逐项存入 exams，记 item_name（检查名称）、finding（检查所见）、conclusion（结论/诊断意见）。识别不清标 needs_review=true。没有检查则输出空数组。
+11. 西药处方：医嘱单/处方中的西药逐项存入 western_medicines，记 drug_name（药名）、dose（剂量，含单位，如“0.5mg”“1片”）、route（给药途径，如“口服”“静脉滴注”）、frequency（给药频次，如“tid”“bid”“每日三次”）、days（天数，如“7天”）。识别不清标 needs_review=true。没有西药则输出空数组。
 
 ## 纠错示例
 - 「黄苓 15g」→ {"herb_name":"黄芩","dose":15,"needs_review":false}
@@ -66,6 +67,10 @@ OCR_JSON_SCHEMA = '''{
   "exams": [
     {"item_name":"", "finding":"", "conclusion":"",
      "needs_review":false, "confidence":1.0}
+  ],
+  "western_medicines": [
+    {"drug_name":"", "dose":"", "route":"", "frequency":"", "days":"",
+     "needs_review":false, "confidence":1.0}
   ]
 }'''
 
@@ -83,7 +88,7 @@ def ocr_structuring_user(vision_text: str) -> str:
 
 {OCR_JSON_SCHEMA}
 
-说明：herbs 按处方原文顺序输出，sequence 从 0 递增；未识别到药味则输出空数组。lab_results 按化验单顺序输出，exams 按检查报告顺序输出，未识别到则输出空数组。"""
+说明：herbs 按处方原文顺序输出，sequence 从 0 递增；未识别到药味则输出空数组。lab_results 按化验单顺序输出，exams 按检查报告顺序输出，western_medicines 按医嘱顺序输出，未识别到则均输出空数组。"""
 
 
 # ---------------------------------------------------------------------------

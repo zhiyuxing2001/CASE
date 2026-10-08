@@ -386,6 +386,36 @@ TABLES: list[dict] = [
             CREATED_AT,
         ],
     },
+    {
+        "sheet": "08 西药明细表",
+        "cn": "西药明细表",
+        "en": "western_medicine_item",
+        "note": "结构化存储西药处方，一行一味：药名、剂量、给药途径、"
+                "给药频次与天数。可由 OCR 从医嘱单中识别入库。",
+        "fields": [
+            ("wm_id", "西药明细编号", "INTEGER", "PRIMARY KEY AUTOINCREMENT",
+             "计算机生成：从1开始，以1为步长增序编号"),
+            ("record_id", "病历编号", "INTEGER", "FOREIGN KEY",
+             "必填，关联 info_record"),
+            ("patient_id", "患者编号", "TEXT", "FOREIGN KEY",
+             "计算机生成，与患者基本信息同步记录"),
+            ("drug_name", "药名", "TEXT", "NOT NULL",
+             "必填，如“甲钴胺”“加巴喷丁”"),
+            ("dose", "剂量", "TEXT", "DEFAULT ''",
+             "选填，如“0.5mg”“1片”“10ml”"),
+            ("route", "给药途径", "TEXT", "DEFAULT ''",
+             "选填，如“口服”“静脉滴注”，建议取值见 dict_term（类型=给药途径）"),
+            ("frequency", "给药频次", "TEXT", "DEFAULT ''",
+             "选填，如“tid”“bid”“每日三次”，建议取值见 dict_term（类型=给药频次）"),
+            ("days", "天数", "TEXT", "DEFAULT ''",
+             "选填，如“7天”“14”"),
+            ("needs_review", "是否待校对", "BOOLEAN", "DEFAULT 0",
+             "0为正常，1为需人工复核"),
+            ("confidence", "识别置信度", "REAL", "DEFAULT 1",
+             "选填，人工录入为1"),
+            CREATED_AT,
+        ],
+    },
 
     # ================= 四、字典 =================
     {
@@ -857,7 +887,7 @@ ENUMS: list[tuple[str, str, list[tuple[int, str]]]] = [
     ("A5", "术语类型（dict_term.term_type）", [
         (1, "舌质"), (2, "舌苔"), (3, "脉象"), (4, "面色"), (5, "炮制"),
         (6, "煎服法"), (7, "用法"), (8, "中医病名"), (9, "治法"), (10, "剂型"),
-        (11, "特殊煎煮法"),
+        (11, "特殊煎煮法"), (12, "给药途径"), (13, "给药频次"),
     ]),
     ("A6", "笔记类型（learning_note.note_type）", [
         (0, "跟诊日志"), (1, "学习心得"), (2, "读书笔记"), (3, "病例讨论"), (4, "阶段总结"),
@@ -919,7 +949,7 @@ GROUPS: dict[str, list[str]] = {
     "一、主数据": ["info_patient", "info_record", "mentor"],
     "二、病案主体": ["case_narrative"],
     "三、诊断与治疗": ["diagnosis", "treatment", "prescription_item",
-                      "lab_result", "exam_report"],
+                      "lab_result", "exam_report", "western_medicine_item"],
     "四、字典": ["dict_herb", "dict_herb_alias", "dict_syndrome",
                  "dict_formula", "dict_term", "dict_template"],
     "五、跟师学习": ["learning_note", "mentor_comment", "note_record_link"],

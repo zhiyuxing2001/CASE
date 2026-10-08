@@ -14,7 +14,8 @@ from .. import schemas
 from ..llm import ChatRequest, Message, Task, get_router
 from ..llm import prompts
 from ..models import (CaseNarrative, Diagnosis, InfoPatient, InfoRecord,
-                      LearningNote, PrescriptionItem, Treatment)
+                      LearningNote, PrescriptionItem, Treatment,
+                      WesternMedicineItem)
 from ..search import search_cases_multi
 from .deps import get_db
 
@@ -72,6 +73,11 @@ def _case_context(db: Session, case_id: int) -> str:
         .where(PrescriptionItem.record_id == case_id)
         .order_by(PrescriptionItem.sequence)
     ).scalars().all()
+    wm = db.execute(
+        select(WesternMedicineItem)
+        .where(WesternMedicineItem.record_id == case_id)
+        .order_by(WesternMedicineItem.wm_id)
+    ).scalars().all()
     lines = [f"患者：{patient.patient_name if patient else ''}，"
              f"{record.clinic_date} 就诊"]
     if narrative:
@@ -84,13 +90,17 @@ def _case_context(db: Session, case_id: int) -> str:
     if treatment:
         lines.append(f"治法：{treatment.treatment_principle}")
         lines.append(f"方剂：{treatment.formula_name}")
-        if treatment.western_medicine:
-            lines.append(f"西药：{treatment.western_medicine}")
     if herbs:
         lines.append("处方：" + "、".join(
             f"{h.herb_name_norm or h.herb_name}{h.dose or ''}{h.unit or 'g'}"
             + (f"（{h.decoction_note}）" if h.decoction_note else "")
             for h in herbs))
+    if wm:
+        lines.append("西药：" + "；".join(
+            " ".join(x for x in (m.drug_name, m.dose, m.route, m.frequency,
+                                 m.days) if x) for m in wm))
+    elif treatment and treatment.western_medicine:
+        lines.append(f"西药：{treatment.western_medicine}")
     return "\n".join(lines)
 
 

@@ -283,6 +283,7 @@ def commit_job(
             ],
             lab_results=s.lab_results,
             exams=s.exams,
+            western_medicines=s.western_medicines,
         ))
     else:
         record_id = create_record(db, schemas.RecordCreate(

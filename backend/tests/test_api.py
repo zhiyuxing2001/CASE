@@ -404,3 +404,46 @@ def test_herb_search_by_pinyin_initials(engine: Engine) -> None:
         assert any(h["herb_name"] == "法半夏" for h in hit2)
     finally:
         _cleanup()
+
+
+def test_western_medicine_roundtrip(engine: Engine) -> None:
+    """西药处方结构化：创建、回读与编辑替换。"""
+    client = _make_client(engine)
+    try:
+        pid = client.post("/api/patients", json={
+            "patient_name": "西药患者", "gender": True, "birthday": "1970-01-01",
+        }).json()["patient_id"]
+        rid = client.post("/api/records", json={
+            "patient_id": pid, "clinic_date": "2026-03-01",
+            "narrative": {"complaint": "腰痛"},
+            "western_medicines": [
+                {"drug_name": "甲钴胺", "dose": "0.5mg", "route": "口服",
+                 "frequency": "tid", "days": "7天"},
+                {"drug_name": "加巴喷丁", "dose": "0.3g", "route": "口服",
+                 "frequency": "bid", "days": "14天"},
+            ],
+        }).json()["record_id"]
+
+        detail = client.get(f"/api/records/{rid}").json()
+        assert len(detail["western_medicines"]) == 2
+        first = detail["western_medicines"][0]
+        assert first["drug_name"] == "甲钴胺"
+        assert first["dose"] == "0.5mg"
+        assert first["route"] == "口服"
+        assert first["frequency"] == "tid"
+        assert first["days"] == "7天"
+
+        # 编辑：整体替换
+        client.put(f"/api/records/{rid}", json={
+            "patient_id": pid, "clinic_date": "2026-03-01",
+            "narrative": {"complaint": "腰痛"},
+            "western_medicines": [
+                {"drug_name": "塞来昔布", "dose": "0.2g", "route": "口服",
+                 "frequency": "qd", "days": "5天"},
+            ],
+        })
+        detail2 = client.get(f"/api/records/{rid}").json()
+        assert len(detail2["western_medicines"]) == 1
+        assert detail2["western_medicines"][0]["drug_name"] == "塞来昔布"
+    finally:
+        _cleanup()

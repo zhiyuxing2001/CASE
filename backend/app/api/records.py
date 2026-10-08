@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from .. import schemas
 from ..models import (AuditLog, CaseNarrative, Diagnosis, ExamReport,
                       InfoPatient, InfoRecord, LabResult, Mentor,
-                      PrescriptionItem, Treatment)
+                      PrescriptionItem, Treatment, WesternMedicineItem)
 from ..search import search_cases
 from ..services.record_service import create_record, review_record, update_record
 from .deps import get_db
@@ -180,6 +180,12 @@ def get_record(record_id: int, db: Session = Depends(get_db)) -> schemas.RecordD
         .order_by(ExamReport.exam_id)
     ).scalars().all()
 
+    western_medicines = db.execute(
+        select(WesternMedicineItem)
+        .where(WesternMedicineItem.record_id == record_id)
+        .order_by(WesternMedicineItem.wm_id)
+    ).scalars().all()
+
     course_rows = db.execute(
         select(InfoRecord, CaseNarrative.complaint, Diagnosis.syndrome)
         .outerjoin(CaseNarrative, CaseNarrative.record_id == InfoRecord.record_id)
@@ -240,6 +246,11 @@ def get_record(record_id: int, db: Session = Depends(get_db)) -> schemas.RecordD
             finding=e.finding, conclusion=e.conclusion,
             needs_review=bool(e.needs_review),
         ) for e in exams],
+        western_medicines=[schemas.WesternMedicineOut(
+            wm_id=w.wm_id, drug_name=w.drug_name, dose=w.dose,
+            route=w.route, frequency=w.frequency, days=w.days,
+            needs_review=bool(w.needs_review),
+        ) for w in western_medicines],
         course=[
             {**_row(v), "clinic_date": _iso(v, "clinic_date"),
              "complaint": complaint or "", "syndrome": syndrome or ""}

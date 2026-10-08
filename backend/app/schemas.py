@@ -104,6 +104,16 @@ class ExamOut(BaseModel):
     needs_review: bool
 
 
+class WesternMedicineOut(BaseModel):
+    wm_id: int
+    drug_name: str
+    dose: str
+    route: str
+    frequency: str
+    days: str
+    needs_review: bool
+
+
 class RecordDetail(BaseModel):
     record: dict[str, Any]
     patient: PatientBrief
@@ -114,6 +124,7 @@ class RecordDetail(BaseModel):
     herbs: list[HerbItem]
     lab_results: list[LabResultOut]
     exams: list[ExamOut]
+    western_medicines: list[WesternMedicineOut]
     course: list[dict[str, Any]]
 
 
@@ -271,6 +282,16 @@ class ExamCreate(BaseModel):
     confidence: float = 1.0
 
 
+class WesternMedicineCreate(BaseModel):
+    drug_name: str
+    dose: str = ""
+    route: str = ""
+    frequency: str = ""
+    days: str = ""
+    needs_review: bool = False
+    confidence: float = 1.0
+
+
 class RecordCreate(BaseModel):
     patient_id: str
     clinic_date: date
@@ -287,6 +308,7 @@ class RecordCreate(BaseModel):
     herbs: list[HerbCreate] = Field(default_factory=list)
     lab_results: list[LabResultCreate] = Field(default_factory=list)
     exams: list[ExamCreate] = Field(default_factory=list)
+    western_medicines: list[WesternMedicineCreate] = Field(default_factory=list)
 
 
 class RecordCreated(BaseModel):
@@ -297,6 +319,8 @@ class RecordReviewRequest(BaseModel):
     """校对请求：仅整体替换药味与检验检查，病史/诊断/治疗保持不变。"""
     herbs: list[HerbCreate] = Field(default_factory=list)
     lab_results: list[LabResultCreate] = Field(default_factory=list)
+    exams: list[ExamCreate] = Field(default_factory=list)
+    western_medicines: list[WesternMedicineCreate] = Field(default_factory=list)
     exams: list[ExamCreate] = Field(default_factory=list)
 
 
@@ -366,6 +390,7 @@ class OcrStructured(BaseModel):
     herbs: list[OcrHerb] = Field(default_factory=list)
     lab_results: list[LabResultCreate] = Field(default_factory=list)
     exams: list[ExamCreate] = Field(default_factory=list)
+    western_medicines: list[WesternMedicineCreate] = Field(default_factory=list)
 
 
 class StructureResult(BaseModel):

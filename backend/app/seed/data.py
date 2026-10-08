@@ -693,4 +693,30 @@ TERMS: list[dict] = [
     {"term_type": 11, "term": "兑服", "description": "药液兑入服"},
     {"term_type": 11, "term": "冲服", "description": "粉末或液体药冲服"},
     {"term_type": 11, "term": "煎汤代水", "description": "用该药煎汤代水煎他药"},
+
+    # 给药途径 term_type=12
+    {"term_type": 12, "term": "口服", "description": "经口服用"},
+    {"term_type": 12, "term": "静脉滴注", "description": "静脉输液"},
+    {"term_type": 12, "term": "静脉注射", "description": "静脉推注"},
+    {"term_type": 12, "term": "肌肉注射", "description": "肌内注射"},
+    {"term_type": 12, "term": "皮下注射", "description": "皮下注射"},
+    {"term_type": 12, "term": "外用", "description": "涂擦患处"},
+    {"term_type": 12, "term": "吸入", "description": "经口鼻吸入"},
+    {"term_type": 12, "term": "舌下含服", "description": "舌下含化"},
+    {"term_type": 12, "term": "直肠给药", "description": "经肛门给药"},
+    {"term_type": 12, "term": "滴眼", "description": "滴入眼内"},
+
+    # 给药频次 term_type=13
+    {"term_type": 13, "term": "qd", "description": "每日一次"},
+    {"term_type": 13, "term": "bid", "description": "每日两次"},
+    {"term_type": 13, "term": "tid", "description": "每日三次"},
+    {"term_type": 13, "term": "qid", "description": "每日四次"},
+    {"term_type": 13, "term": "qn", "description": "每晚一次"},
+    {"term_type": 13, "term": "qod", "description": "隔日一次"},
+    {"term_type": 13, "term": "qh", "description": "每小时一次"},
+    {"term_type": 13, "term": "prn", "description": "必要时"},
+    {"term_type": 13, "term": "st", "description": "立即"},
+    {"term_type": 13, "term": "每日一次", "description": "qd"},
+    {"term_type": 13, "term": "每日两次", "description": "bid"},
+    {"term_type": 13, "term": "每日三次", "description": "tid"},
 ]

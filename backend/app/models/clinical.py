@@ -220,3 +220,31 @@ class ExamReport(CreatedAtMixin, Base):
     needs_review = Column(Boolean, nullable=False, default=False,
                           doc="是否待校对")
     confidence = Column(REAL, nullable=True, default=1, doc="识别置信度")
+
+
+class WesternMedicineItem(CreatedAtMixin, Base):
+    """西药明细表 — 结构化存储西药处方，一行一味西药。
+
+    记录药名、剂量、给药途径、给药频次与天数，可由 OCR 从医嘱单中识别。
+    """
+
+    __tablename__ = "western_medicine_item"
+
+    wm_id = Column(Integer, primary_key=True, autoincrement=True,
+                   doc="西药明细编号")
+    record_id = Column(Integer, ForeignKey("info_record.record_id"),
+                       nullable=False, index=True, doc="病历编号")
+    patient_id = Column(Text, ForeignKey("info_patient.patient_id"),
+                        nullable=False, doc="患者编号")
+    drug_name = Column(Text, nullable=False, doc="药名，如“甲钴胺”“加巴喷丁”")
+    dose = Column(Text, nullable=False, default="",
+                  doc="剂量，如“0.5mg”“1片”“10ml”")
+    route = Column(Text, nullable=False, default="",
+                   doc="给药途径，如“口服”“静脉滴注”")
+    frequency = Column(Text, nullable=False, default="",
+                       doc="给药频次，如“tid”“bid”“每日三次”")
+    days = Column(Text, nullable=False, default="",
+                  doc="天数，如“7天”“14”")
+    needs_review = Column(Boolean, nullable=False, default=False,
+                          doc="是否待校对")
+    confidence = Column(REAL, nullable=True, default=1, doc="识别置信度")
