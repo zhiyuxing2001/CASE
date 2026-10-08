@@ -172,7 +172,7 @@ def structure_job(
 
     data_url = _image_data_url(attachment, path)
     messages = [
-        Message("system", prompts.SYSTEM_OCR_STRUCTURING),
+        Message("system", prompts.get_system_prompt("ocr_structuring")),
         Message("user", user_prompt),
     ]
     resp = router.chat(ChatRequest(

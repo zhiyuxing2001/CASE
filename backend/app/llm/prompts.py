@@ -180,3 +180,46 @@ def term_normalize_user(term: str, candidates: list[str]) -> str:
 {{"normalized":"标准名","confidence":0.0,"reason":"形近字|别名|音近|其他","matched":true}}
 
 若无法归一，normalized 填原术语，matched 为 false。"""
+
+
+# ---------------------------------------------------------------------------
+# 可维护的系统提示词
+# ---------------------------------------------------------------------------
+
+#: 系统提示词注册表：key → (中文名, 说明, 默认值)。默认值即上方常量，
+#: 运行时可在「提示词维护」中覆盖，覆盖值存于 app_setting。
+SYSTEM_PROMPTS: dict[str, tuple[str, str, str]] = {
+    "ocr_structuring": ("OCR 结构化",
+                        "把病历/处方图片与 OCR 文本结构化为 JSON",
+                        SYSTEM_OCR_STRUCTURING),
+    "case_qa": ("病案问答",
+                "基于病案库回答问题并标注出处",
+                SYSTEM_CASE_QA),
+    "note_draft": ("心得草稿",
+                   "把跟诊体会整理成结构化学习心得",
+                   SYSTEM_NOTE_DRAFT),
+    "note_polish": ("心得润色",
+                    "润色跟诊心得，规范中医术语",
+                    SYSTEM_NOTE_POLISH),
+    "term_normalize": ("术语归一",
+                       "OCR 错字/常见别名的术语归一",
+                       SYSTEM_TERM_NORMALIZE),
+}
+
+
+def _prompt_override(key: str) -> str:
+    """从 app_setting 读提示词覆盖；未设置或会话不可用时返回空串。"""
+    try:
+        from ..db import SessionLocal
+        from ..models import AppSetting
+        with SessionLocal() as session:
+            row = session.get(AppSetting, f"prompt_{key}")
+            return row.value if row and row.value else ""
+    except Exception:  # noqa: BLE001 — 降级为默认值
+        return ""
+
+
+def get_system_prompt(key: str) -> str:
+    """返回系统提示词：优先数据库覆盖，否则使用默认值。"""
+    override = _prompt_override(key)
+    return override or SYSTEM_PROMPTS[key][2]

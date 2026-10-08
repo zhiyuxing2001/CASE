@@ -153,7 +153,7 @@ def chat(payload: schemas.AiChatRequest,
 
     context = "\n\n".join(context_blocks)
     messages = [
-        Message("system", prompts.SYSTEM_CASE_QA),
+        Message("system", prompts.get_system_prompt("case_qa")),
         Message("user", prompts.case_qa_user(context, payload.question)),
     ]
     resp = router.chat(ChatRequest(task=Task.CASE_QA, messages=messages))
@@ -178,7 +178,7 @@ def draft(payload: schemas.AiDraftRequest,
     if payload.case_id:
         context = _case_context(db, payload.case_id)
     user = prompts.note_draft_user(payload.topic, context)
-    messages = [Message("system", prompts.SYSTEM_NOTE_DRAFT), Message("user", user)]
+    messages = [Message("system", prompts.get_system_prompt("note_draft")), Message("user", user)]
     resp = router.chat(ChatRequest(task=Task.NOTE_DRAFT, messages=messages,
                                    temperature=0.5))
     if resp is None:
@@ -191,7 +191,7 @@ def polish(payload: schemas.AiPolishRequest) -> schemas.AiDraftResponse:
     router = get_router()
     if not router.configured:
         return schemas.AiDraftResponse(text="", degraded=True, ai_configured=False)
-    messages = [Message("system", prompts.SYSTEM_NOTE_POLISH),
+    messages = [Message("system", prompts.get_system_prompt("note_polish")),
                 Message("user", prompts.note_polish_user(payload.text))]
     resp = router.chat(ChatRequest(task=Task.NOTE_POLISH, messages=messages,
                                    temperature=0.3))

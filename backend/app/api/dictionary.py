@@ -92,7 +92,7 @@ def normalize_herb(
 
     candidates = [name for _, name, _ in suggest_herbs(db, payload.term, limit=10)]
     messages = [
-        Message("system", prompts.SYSTEM_TERM_NORMALIZE),
+        Message("system", prompts.get_system_prompt("term_normalize")),
         Message("user", prompts.term_normalize_user(payload.term, candidates)),
     ]
     resp = router.chat(ChatRequest(

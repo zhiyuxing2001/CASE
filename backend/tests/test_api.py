@@ -329,3 +329,28 @@ def test_review_record_clears_flags(engine: Engine) -> None:
         assert detail["diagnosis"]["syndrome"] == "肝胃不和证"
     finally:
         _cleanup()
+
+
+def test_prompt_maintenance(engine: Engine) -> None:
+    """提示词维护：查看、覆盖与恢复默认。"""
+    client = _make_client(engine)
+    try:
+        prompts = client.get("/api/prompts").json()
+        assert len(prompts) >= 5
+        assert all(not p["is_modified"] for p in prompts)
+
+        # 覆盖 case_qa
+        r = client.put("/api/prompts/case_qa", json={"value": "你是测试问答助手。"})
+        assert r.status_code == 200
+        assert r.json()["is_modified"] is True
+
+        current = next(p for p in client.get("/api/prompts").json() if p["key"] == "case_qa")
+        assert current["current"] == "你是测试问答助手。"
+
+        # 恢复默认
+        assert client.delete("/api/prompts/case_qa").status_code == 204
+        after = next(p for p in client.get("/api/prompts").json() if p["key"] == "case_qa")
+        assert after["is_modified"] is False
+        assert after["current"] == after["default"]
+    finally:
+        _cleanup()

@@ -726,3 +726,16 @@ class MentorDetail(BaseModel):
     note_count: int
     top_syndromes: list[MentorSyndrome]
     recent_records: list[MentorRecordBrief]
+
+
+class PromptOut(BaseModel):
+    key: str
+    name: str
+    description: str
+    current: str
+    default: str
+    is_modified: bool
+
+
+class PromptUpdate(BaseModel):
+    value: str
