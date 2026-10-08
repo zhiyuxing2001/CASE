@@ -49,11 +49,22 @@ interface ExamRow {
   conclusion: string
 }
 
+interface WMRow {
+  drug_name: string
+  dose: string
+  route: string
+  frequency: string
+  days: string
+}
+
 const EMPTY_LAB: LabRow = {
   test_name: "", item_name: "", result_value: "", unit: "",
   reference_range: "", abnormal_flag: "0",
 }
 const EMPTY_EXAM: ExamRow = { item_name: "", finding: "", conclusion: "" }
+const EMPTY_WM: WMRow = {
+  drug_name: "", dose: "", route: "", frequency: "", days: "",
+}
 
 const EMPTY_HERB: HerbRow = {
   herb_name: "", dose: "", unit: "g", processing: "", decoction_note: "", role: "",
@@ -129,6 +140,7 @@ export function CaseEntry() {
   const [herbs, setHerbs] = useState<HerbRow[]>([{ ...EMPTY_HERB }])
   const [labResults, setLabResults] = useState<LabRow[]>([])
   const [exams, setExams] = useState<ExamRow[]>([])
+  const [westernMeds, setWesternMeds] = useState<WMRow[]>([])
 
   const { data: mentors = [] } = useQuery({ queryKey: ["mentors"], queryFn: fetchMentors })
   const { data: followUpPatient } = useQuery({
@@ -207,6 +219,13 @@ export function CaseEntry() {
       finding: e.finding,
       conclusion: e.conclusion,
     })))
+    setWesternMeds(editRecord.western_medicines.map((m) => ({
+      drug_name: m.drug_name,
+      dose: m.dose,
+      route: m.route,
+      frequency: m.frequency,
+      days: m.days,
+    })))
   }, [editRecord])
 
   const mutation = useMutation({
@@ -280,6 +299,15 @@ export function CaseEntry() {
             finding: e.finding,
             conclusion: e.conclusion,
           })),
+        western_medicines: westernMeds
+          .filter((m) => m.drug_name.trim())
+          .map((m) => ({
+            drug_name: m.drug_name.trim(),
+            dose: m.dose,
+            route: m.route,
+            frequency: m.frequency,
+            days: m.days,
+          })),
       }
       if (isEdit) return updateRecord(Number(editRecordId), payload)
       return createRecord(payload)
@@ -328,6 +356,10 @@ export function CaseEntry() {
 
   function updateExam(index: number, patch: Partial<ExamRow>) {
     setExams((rows) => rows.map((r, i) => (i === index ? { ...r, ...patch } : r)))
+  }
+
+  function updateWM(index: number, patch: Partial<WMRow>) {
+    setWesternMeds((rows) => rows.map((r, i) => (i === index ? { ...r, ...patch } : r)))
   }
 
   return (
@@ -647,15 +679,63 @@ export function CaseEntry() {
             <Textarea value={treatment.advice} rows={2}
               onChange={(e) => setTreatment({ ...treatment, advice: e.target.value })} />
           </Field>
-          <Field label="西药" hint="如 甲钴胺 0.5mg tid，与中药分开记录">
-            <Textarea value={treatment.western_medicine} rows={2}
-              onChange={(e) => setTreatment({ ...treatment, western_medicine: e.target.value })}
-              placeholder="如 甲钴胺 0.5mg tid" />
-          </Field>
           <Field label="其他治疗" hint="中成药、针灸、外治等">
             <Textarea value={treatment.other_treatment} rows={2}
               onChange={(e) => setTreatment({ ...treatment, other_treatment: e.target.value })} />
           </Field>
+        </CardContent>
+      </Card>
+
+      {/* 西药处方 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">西药处方</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="overflow-hidden rounded-lg border">
+            <div className="grid grid-cols-[1fr_6.5rem_1fr_1fr_5rem_2rem] gap-2 border-b bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+              <span>药名</span><span>剂量</span><span>给药途径</span>
+              <span>给药频次</span><span>天数</span><span />
+            </div>
+            <div className="divide-y">
+              {westernMeds.map((row, i) => (
+                <div key={i} className="grid grid-cols-[1fr_6.5rem_1fr_1fr_5rem_2rem] items-center gap-2 px-3 py-1.5">
+                  <Input value={row.drug_name}
+                    onChange={(e) => updateWM(i, { drug_name: e.target.value })}
+                    placeholder="如 甲钴胺" />
+                  <Input value={row.dose}
+                    onChange={(e) => updateWM(i, { dose: e.target.value })}
+                    placeholder="如 0.5mg" />
+                  <FreeTextCombobox
+                    value={row.route}
+                    onValueChange={(v) => updateWM(i, { route: v })}
+                    load={termLoad(12)}
+                    placeholder="如 口服"
+                  />
+                  <FreeTextCombobox
+                    value={row.frequency}
+                    onValueChange={(v) => updateWM(i, { frequency: v })}
+                    load={termLoad(13)}
+                    placeholder="如 tid"
+                  />
+                  <Input value={row.days}
+                    onChange={(e) => updateWM(i, { days: e.target.value })}
+                    placeholder="如 7天" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8"
+                    onClick={() => setWesternMeds((rows) => rows.filter((_, j) => j !== i))}>
+                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </div>
+              ))}
+              {westernMeds.length === 0 && (
+                <div className="px-3 py-3 text-sm text-muted-foreground">暂无西药（可点击下方添加）</div>
+              )}
+            </div>
+          </div>
+          <Button type="button" variant="outline" size="sm"
+            onClick={() => setWesternMeds((rows) => [...rows, { ...EMPTY_WM }])}>
+            <Plus className="h-4 w-4" /> 添加西药
+          </Button>
         </CardContent>
       </Card>
 

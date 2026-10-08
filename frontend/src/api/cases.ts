@@ -118,6 +118,14 @@ export interface ExamPayload {
   conclusion?: string
 }
 
+export interface WesternMedicinePayload {
+  drug_name: string
+  dose?: string
+  route?: string
+  frequency?: string
+  days?: string
+}
+
 export interface RecordCreatePayload {
   patient_id: string
   clinic_date: string
@@ -133,6 +141,7 @@ export interface RecordCreatePayload {
   herbs: HerbPayload[]
   lab_results?: LabResultPayload[]
   exams?: ExamPayload[]
+  western_medicines?: WesternMedicinePayload[]
 }
 
 export function createPatient(
@@ -160,6 +169,7 @@ export function reviewRecord(
     herbs: (HerbPayload & { needs_review?: boolean })[]
     lab_results: (LabResultPayload & { needs_review?: boolean })[]
     exams: (ExamPayload & { needs_review?: boolean })[]
+    western_medicines: (WesternMedicinePayload & { needs_review?: boolean })[]
   },
 ): Promise<{ record_id: number }> {
   return postJSON<{ record_id: number }>(`/api/records/${recordId}/review`, payload)

@@ -58,6 +58,16 @@ export interface OcrExam {
   confidence: number
 }
 
+export interface OcrWesternMedicine {
+  drug_name: string
+  dose: string
+  route: string
+  frequency: string
+  days: string
+  needs_review: boolean
+  confidence: number
+}
+
 export interface OcrStructured {
   narrative: Record<string, string>
   diagnosis: Record<string, string | null>
@@ -65,6 +75,7 @@ export interface OcrStructured {
   herbs: OcrHerb[]
   lab_results: OcrLabResult[]
   exams: OcrExam[]
+  western_medicines: OcrWesternMedicine[]
 }
 
 export interface StructureResult {

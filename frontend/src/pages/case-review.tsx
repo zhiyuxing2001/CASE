@@ -37,6 +37,14 @@ interface ReviewExam {
   conclusion: string
   needs_review: boolean
 }
+interface ReviewWM {
+  drug_name: string
+  dose: string
+  route: string
+  frequency: string
+  days: string
+  needs_review: boolean
+}
 
 export function CaseReview() {
   const { recordId } = useParams<{ recordId: string }>()
@@ -47,10 +55,12 @@ export function CaseReview() {
   const [herbs, setHerbs] = useState<ReviewHerb[]>([])
   const [labs, setLabs] = useState<ReviewLab[]>([])
   const [exams, setExams] = useState<ReviewExam[]>([])
+  const [meds, setMeds] = useState<ReviewWM[]>([])
   // 进入页面时待校对项的索引，保持稳定以便勾选后仍可回看
   const [flaggedHerbIdx, setFlaggedHerbIdx] = useState<number[]>([])
   const [flaggedLabIdx, setFlaggedLabIdx] = useState<number[]>([])
   const [flaggedExamIdx, setFlaggedExamIdx] = useState<number[]>([])
+  const [flaggedWMIdx, setFlaggedWMIdx] = useState<number[]>([])
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["record", id],
@@ -75,15 +85,21 @@ export function CaseReview() {
       item_name: e.item_name, finding: e.finding, conclusion: e.conclusion,
       needs_review: e.needs_review,
     })))
+    setMeds(data.western_medicines.map((m) => ({
+      drug_name: m.drug_name, dose: m.dose, route: m.route,
+      frequency: m.frequency, days: m.days, needs_review: m.needs_review,
+    })))
     setFlaggedHerbIdx(data.herbs.map((h, i) => (h.needs_review ? i : -1)).filter((i) => i >= 0))
     setFlaggedLabIdx(data.lab_results.map((l, i) => (l.needs_review ? i : -1)).filter((i) => i >= 0))
     setFlaggedExamIdx(data.exams.map((e, i) => (e.needs_review ? i : -1)).filter((i) => i >= 0))
+    setFlaggedWMIdx(data.western_medicines.map((m, i) => (m.needs_review ? i : -1)).filter((i) => i >= 0))
   }, [data])
 
   const totalFlagged =
     herbs.filter((h) => h.needs_review).length +
     labs.filter((l) => l.needs_review).length +
-    exams.filter((e) => e.needs_review).length
+    exams.filter((e) => e.needs_review).length +
+    meds.filter((m) => m.needs_review).length
 
   const save = useMutation({
     mutationFn: () => reviewRecord(id, {
@@ -92,6 +108,7 @@ export function CaseReview() {
       })),
       lab_results: labs.map((l) => ({ ...l })),
       exams: exams.map((e) => ({ ...e })),
+      western_medicines: meds.map((m) => ({ ...m })),
     }),
     onSuccess: () => {
       toast.success("校对已保存")
@@ -111,11 +128,15 @@ export function CaseReview() {
   function setExam(i: number, patch: Partial<ReviewExam>) {
     setExams((rows) => rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)))
   }
+  function setMed(i: number, patch: Partial<ReviewWM>) {
+    setMeds((rows) => rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)))
+  }
 
   function markAllReviewed() {
     setHerbs((rows) => rows.map((r) => ({ ...r, needs_review: false })))
     setLabs((rows) => rows.map((r) => ({ ...r, needs_review: false })))
     setExams((rows) => rows.map((r) => ({ ...r, needs_review: false })))
+    setMeds((rows) => rows.map((r) => ({ ...r, needs_review: false })))
   }
 
   if (isLoading) return <div className="p-8 text-sm text-muted-foreground">加载中…</div>
@@ -223,6 +244,30 @@ export function CaseReview() {
                         <Input value={e.item_name} onChange={(ev) => setExam(i, { item_name: ev.target.value })} placeholder="检查名称" />
                         <Input value={e.finding} onChange={(ev) => setExam(i, { finding: ev.target.value })} placeholder="检查所见" />
                         <Input value={e.conclusion} onChange={(ev) => setExam(i, { conclusion: ev.target.value })} placeholder="结论" />
+                      </div>
+                    </ReviewRow>
+                  )
+                })}
+              </CardContent>
+            </Card>
+          )}
+
+          {flaggedWMIdx.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">待校对西药</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {flaggedWMIdx.map((i) => {
+                  const m = meds[i]
+                  return (
+                    <ReviewRow key={i} checked={!m.needs_review} onCheck={(v) => setMed(i, { needs_review: !v })}>
+                      <div className="grid grid-cols-[1fr_6rem_1fr_1fr_5rem] gap-2">
+                        <Input value={m.drug_name} onChange={(ev) => setMed(i, { drug_name: ev.target.value })} placeholder="药名" />
+                        <Input value={m.dose} onChange={(ev) => setMed(i, { dose: ev.target.value })} placeholder="剂量" />
+                        <Input value={m.route} onChange={(ev) => setMed(i, { route: ev.target.value })} placeholder="途径" />
+                        <Input value={m.frequency} onChange={(ev) => setMed(i, { frequency: ev.target.value })} placeholder="频次" />
+                        <Input value={m.days} onChange={(ev) => setMed(i, { days: ev.target.value })} placeholder="天数" />
                       </div>
                     </ReviewRow>
                   )

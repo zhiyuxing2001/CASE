@@ -11,6 +11,7 @@ import {
   structureOcrJob,
   type OcrCommitPayload,
   type OcrExam,
+  type OcrWesternMedicine,
   type OcrHerb,
   type OcrLabResult,
   type OcrStructured,
@@ -41,6 +42,7 @@ function emptyStructured(): OcrStructured {
     herbs: [],
     lab_results: [],
     exams: [],
+    western_medicines: [],
   }
 }
 
@@ -133,6 +135,13 @@ export function OcrReview() {
     setStructured((s) => ({
       ...s,
       exams: s.exams.map((e, idx) => (idx === i ? { ...e, ...patch } : e)),
+    }))
+  }
+  function setWM(i: number, patch: Partial<OcrWesternMedicine>) {
+    setStructured((s) => ({
+      ...s,
+      western_medicines: s.western_medicines.map(
+        (m, idx) => (idx === i ? { ...m, ...patch } : m)),
     }))
   }
 
@@ -470,6 +479,40 @@ export function OcrReview() {
                 </div>
                 <Button type="button" variant="outline" size="sm" onClick={() => setStructured((s) => ({ ...s, exams: [...s.exams, { item_name: "", finding: "", conclusion: "", needs_review: false, confidence: 1 }] }))}>
                   <Plus className="h-4 w-4" /> 添加检查
+                </Button>
+              </div>
+
+              {/* 西药 */}
+              <div className="space-y-2">
+                <Label>西药处方</Label>
+                <div className="overflow-hidden rounded-lg border">
+                  <div className="grid grid-cols-[1fr_6rem_1fr_1fr_5rem_2rem] gap-2 border-b bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                    <span>药名</span><span>剂量</span><span>途径</span>
+                    <span>频次</span><span>天数</span><span />
+                  </div>
+                  <div className="divide-y">
+                    {structured.western_medicines.map((m, i) => (
+                      <div key={i} className={cn("grid grid-cols-[1fr_6rem_1fr_1fr_5rem_2rem] items-center gap-2 px-3 py-1.5", m.needs_review && "bg-amber-500/5")}>
+                        <div className="flex items-center gap-1.5">
+                          <Input value={m.drug_name} onChange={(ev) => setWM(i, { drug_name: ev.target.value })} placeholder="如 甲钴胺" />
+                          {m.needs_review && <Badge variant="warning" className="shrink-0">待校对</Badge>}
+                        </div>
+                        <Input value={m.dose} onChange={(ev) => setWM(i, { dose: ev.target.value })} placeholder="如 0.5mg" />
+                        <Input value={m.route} onChange={(ev) => setWM(i, { route: ev.target.value })} placeholder="如 口服" />
+                        <Input value={m.frequency} onChange={(ev) => setWM(i, { frequency: ev.target.value })} placeholder="如 tid" />
+                        <Input value={m.days} onChange={(ev) => setWM(i, { days: ev.target.value })} placeholder="如 7天" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setStructured((s) => ({ ...s, western_medicines: s.western_medicines.filter((_, j) => j !== i) }))}>
+                          <Trash2 className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </div>
+                    ))}
+                    {structured.western_medicines.length === 0 && (
+                      <div className="px-3 py-3 text-sm text-muted-foreground">暂无西药（可点击下方添加）</div>
+                    )}
+                  </div>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => setStructured((s) => ({ ...s, western_medicines: [...s.western_medicines, { drug_name: "", dose: "", route: "", frequency: "", days: "", needs_review: false, confidence: 1 }] }))}>
+                  <Plus className="h-4 w-4" /> 添加西药
                 </Button>
               </div>
 

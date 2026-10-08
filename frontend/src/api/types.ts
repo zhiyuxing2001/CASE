@@ -141,6 +141,16 @@ export interface ExamItem {
   needs_review: boolean
 }
 
+export interface WesternMedicineItem {
+  wm_id: number
+  drug_name: string
+  dose: string
+  route: string
+  frequency: string
+  days: string
+  needs_review: boolean
+}
+
 export interface CourseVisit {
   record_id: number
   clinic_date: string
@@ -160,6 +170,7 @@ export interface RecordDetail {
   herbs: HerbItem[]
   lab_results: LabResultItem[]
   exams: ExamItem[]
+  western_medicines: WesternMedicineItem[]
   course: CourseVisit[]
 }
 

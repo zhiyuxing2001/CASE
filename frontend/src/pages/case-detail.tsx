@@ -80,11 +80,13 @@ export function CaseDetail() {
   const needsReview =
     herbs.some((h) => h.needs_review) ||
     data.lab_results.some((l) => l.needs_review) ||
-    data.exams.some((e) => e.needs_review)
+    data.exams.some((e) => e.needs_review) ||
+    data.western_medicines.some((m) => m.needs_review)
   const reviewCount =
     herbs.filter((h) => h.needs_review).length +
     data.lab_results.filter((l) => l.needs_review).length +
-    data.exams.filter((e) => e.needs_review).length
+    data.exams.filter((e) => e.needs_review).length +
+    data.western_medicines.filter((m) => m.needs_review).length
   const currentIndex = course.findIndex((v) => v.record_id === id)
   const prevVisit = currentIndex > 0 ? course[currentIndex - 1] : null
   const nextVisit = currentIndex >= 0 && currentIndex < course.length - 1 ? course[currentIndex + 1] : null
@@ -390,6 +392,39 @@ export function CaseDetail() {
                     {e.conclusion && <p className="mt-1 text-sm"><span className="text-muted-foreground">结论：</span>{e.conclusion}</p>}
                   </div>
                 ))}
+              </div>
+            </Section>
+          )}
+
+          {/* 西药处方 */}
+          {data.western_medicines.length > 0 && (
+            <Section title="西药处方">
+              <div className="py-2">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-xs text-muted-foreground">
+                      <th className="py-1.5 pr-2 font-medium">药名</th>
+                      <th className="py-1.5 pr-2 font-medium">剂量</th>
+                      <th className="py-1.5 pr-2 font-medium">途径</th>
+                      <th className="py-1.5 pr-2 font-medium">频次</th>
+                      <th className="py-1.5 font-medium">天数</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.western_medicines.map((m) => (
+                      <tr key={m.wm_id} className="border-b last:border-0">
+                        <td className="py-1.5 pr-2 font-medium">
+                          {m.drug_name}
+                          {m.needs_review && <Badge variant="warning" className="ml-1.5">待校对</Badge>}
+                        </td>
+                        <td className="py-1.5 pr-2 tabular-nums">{m.dose}</td>
+                        <td className="py-1.5 pr-2 text-muted-foreground">{m.route}</td>
+                        <td className="py-1.5 pr-2 text-muted-foreground">{m.frequency}</td>
+                        <td className="py-1.5 text-muted-foreground">{m.days}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </Section>
           )}
