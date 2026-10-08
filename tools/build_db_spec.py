@@ -341,6 +341,8 @@ TABLES: list[dict] = [
              "必填，关联 info_record"),
             ("patient_id", "患者编号", "TEXT", "FOREIGN KEY",
              "计算机生成，与患者基本信息同步记录"),
+            ("test_name", "检验名称", "TEXT", "DEFAULT ''",
+             "选填，如“血常规”“肝功能”；用于把同一张化验单的项目分组"),
             ("item_name", "项目名称", "TEXT", "NOT NULL",
              "必填，如“白细胞计数”“血红蛋白”"),
             ("result_value", "结果值", "TEXT", "DEFAULT ''",

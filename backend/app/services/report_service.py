@@ -117,21 +117,34 @@ def _add_lab_results(doc: Document, labs) -> None:
     if not labs:
         return
     doc.add_heading("检验结果", level=3)
-    table = doc.add_table(rows=1, cols=5)
+    has_test = any((lab.test_name or "").strip() for lab in labs)
+    cols = 6 if has_test else 5
+    table = doc.add_table(rows=1, cols=cols)
     table.style = "Table Grid"
-    headers = ["项目", "结果", "单位", "参考范围", "异常"]
+    headers = (["检验名称", "项目", "结果", "单位", "参考范围", "异常"]
+               if has_test else ["项目", "结果", "单位", "参考范围", "异常"])
     for i, text in enumerate(headers):
         p = table.rows[0].cells[i].paragraphs[0]
         _style_run(p.add_run(text), bold=True)
     for lab in labs:
         cells = table.add_row().cells
-        values = [
-            lab.item_name,
-            lab.result_value,
-            lab.unit,
-            lab.reference_range,
-            ABNORMAL.get(lab.abnormal_flag or 0, ""),
-        ]
+        if has_test:
+            values = [
+                lab.test_name or "",
+                lab.item_name,
+                lab.result_value,
+                lab.unit,
+                lab.reference_range,
+                ABNORMAL.get(lab.abnormal_flag or 0, ""),
+            ]
+        else:
+            values = [
+                lab.item_name,
+                lab.result_value,
+                lab.unit,
+                lab.reference_range,
+                ABNORMAL.get(lab.abnormal_flag or 0, ""),
+            ]
         for i, text in enumerate(values):
             p = cells[i].paragraphs[0]
             _style_run(p.add_run(text or ""))

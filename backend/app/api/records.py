@@ -229,7 +229,7 @@ def get_record(record_id: int, db: Session = Depends(get_db)) -> schemas.RecordD
             needs_review=bool(h.needs_review),
         ) for h in herbs],
         lab_results=[schemas.LabResultOut(
-            result_id=l.result_id,
+            result_id=l.result_id, test_name=l.test_name,
             item_name=l.item_name, result_value=l.result_value,
             unit=l.unit, reference_range=l.reference_range,
             abnormal_flag=l.abnormal_flag or 0,

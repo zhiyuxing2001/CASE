@@ -168,8 +168,8 @@ class PrescriptionItem(CreatedAtMixin, Base):
 class LabResult(CreatedAtMixin, Base):
     """检验结果表 — 结构化存储化验数据（血常规、生化等）。
 
-    一行一个检验项目：记录结果值、单位、参考范围与异常方向。
-    可由 OCR 从化验单中识别入库。
+    一行一个检验项目；test_name 为检验名称（如“血常规”“肝功能”），
+    用于把同一张化验单下的多个项目分组展示。可由 OCR 从化验单识别入库。
     """
 
     __tablename__ = "lab_result"
@@ -180,6 +180,8 @@ class LabResult(CreatedAtMixin, Base):
                        nullable=False, index=True, doc="病历编号")
     patient_id = Column(Text, ForeignKey("info_patient.patient_id"),
                         nullable=False, doc="患者编号")
+    test_name = Column(Text, nullable=False, default="",
+                       doc="检验名称，如“血常规”“肝功能”“肾功能”")
     item_name = Column(Text, nullable=False,
                        doc="项目名称，如“白细胞计数”“血红蛋白”")
     result_value = Column(Text, nullable=False, default="",

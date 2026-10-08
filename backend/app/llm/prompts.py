@@ -27,7 +27,7 @@ SYSTEM_OCR_STRUCTURING = """你是一名资深中医病案结构化助手。你�
 6. 西医诊断多条时用中文分号「；」分隔。
 7. 总量校验：单据若给出「总量」，用「剂量×付数」核对，不一致时该药 needs_review=true。
 8. 手写或低置信度内容 needs_review=true，confidence 用 0~1 估计（手写约 0.3，印刷清晰约 1.0）。
-9. 检验结果：化验单中的项目逐行存入 lab_results，记 item_name（项目）、result_value（结果）、unit（单位）、reference_range（参考范围）；结果高于参考范围上界时 abnormal_flag=1、低于下界时 abnormal_flag=2、正常为 0。识别不清标 needs_review=true。没有化验则输出空数组。
+9. 检验结果：化验单中的项目逐行存入 lab_results，记 test_name（检验名称，如“血常规”“肝功能”，同一张化验单下的项目用相同名称）、item_name（项目）、result_value（结果）、unit（单位）、reference_range（参考范围）；结果高于参考范围上界时 abnormal_flag=1、低于下界时 abnormal_flag=2、正常为 0。识别不清标 needs_review=true。没有化验则输出空数组。
 10. 检查报告：影像/超声/内镜等检查逐项存入 exams，记 item_name（检查名称）、finding（检查所见）、conclusion（结论/诊断意见）。识别不清标 needs_review=true。没有检查则输出空数组。
 
 ## 纠错示例
@@ -59,7 +59,7 @@ OCR_JSON_SCHEMA = '''{
      "needs_review":false, "confidence":1.0}
   ],
   "lab_results": [
-    {"item_name":"", "result_value":"", "unit":"",
+    {"test_name":"", "item_name":"", "result_value":"", "unit":"",
      "reference_range":"", "abnormal_flag":0,
      "needs_review":false, "confidence":1.0}
   ],

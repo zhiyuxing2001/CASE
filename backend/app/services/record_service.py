@@ -107,7 +107,7 @@ def create_record(db: Session, payload: schemas.RecordCreate) -> int:
     for lab in payload.lab_results:
         db.add(LabResult(
             record_id=record.record_id, patient_id=payload.patient_id,
-            item_name=lab.item_name,
+            test_name=lab.test_name, item_name=lab.item_name,
             result_value=lab.result_value, unit=lab.unit,
             reference_range=lab.reference_range,
             abnormal_flag=lab.abnormal_flag,
@@ -201,7 +201,7 @@ def _replace_clinical_items(db: Session, record: InfoRecord,
     for lab in lab_results:
         db.add(LabResult(
             record_id=rid, patient_id=pid,
-            item_name=lab.item_name,
+            test_name=lab.test_name, item_name=lab.item_name,
             result_value=lab.result_value, unit=lab.unit,
             reference_range=lab.reference_range,
             abnormal_flag=lab.abnormal_flag,

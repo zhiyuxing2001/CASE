@@ -258,8 +258,9 @@ def test_lab_results_roundtrip(engine: Engine) -> None:
             "patient_id": pid, "clinic_date": "2026-02-01",
             "narrative": {"complaint": "乏力"},
             "lab_results": [
-                {"item_name": "白细胞计数", "result_value": "12.5",
-                 "unit": "10^9/L", "reference_range": "3.5-9.5", "abnormal_flag": 1},
+                {"test_name": "血常规", "item_name": "白细胞计数",
+                 "result_value": "12.5", "unit": "10^9/L",
+                 "reference_range": "3.5-9.5", "abnormal_flag": 1},
             ],
             "exams": [
                 {"item_name": "胸部CT", "finding": "右肺上叶小结节",
@@ -269,6 +270,7 @@ def test_lab_results_roundtrip(engine: Engine) -> None:
 
         detail = client.get(f"/api/records/{rid}").json()
         assert len(detail["lab_results"]) == 1
+        assert detail["lab_results"][0]["test_name"] == "血常规"
         assert detail["lab_results"][0]["item_name"] == "白细胞计数"
         assert detail["lab_results"][0]["abnormal_flag"] == 1
         assert len(detail["exams"]) == 1

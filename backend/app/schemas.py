@@ -87,6 +87,7 @@ class HerbItem(BaseModel):
 
 class LabResultOut(BaseModel):
     result_id: int
+    test_name: str
     item_name: str
     result_value: str
     unit: str
@@ -252,6 +253,7 @@ class HerbCreate(BaseModel):
 
 
 class LabResultCreate(BaseModel):
+    test_name: str = ""
     item_name: str
     result_value: str = ""
     unit: str = ""
