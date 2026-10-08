@@ -585,18 +585,18 @@ export function CaseEntry() {
           <div className="space-y-2">
             <Label>处方药味</Label>
             <div className="overflow-hidden rounded-lg border">
-              <div className="grid grid-cols-[1fr_5.5rem_4.5rem_1fr_1fr_2rem] gap-2 border-b bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+              <div className="grid grid-cols-[1fr_5.5rem_4.5rem_1fr_2rem] gap-2 border-b bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
                 <span>药味</span><span>剂量</span><span>单位</span>
-                <span>炮制</span><span>煎煮要求</span><span />
+                <span>煎煮要求</span><span />
               </div>
               <div className="divide-y">
                 {herbs.map((row, i) => (
-                  <div key={i} className="grid grid-cols-[1fr_5.5rem_4.5rem_1fr_1fr_2rem] items-center gap-2 px-3 py-1.5">
+                  <div key={i} className="grid grid-cols-[1fr_5.5rem_4.5rem_1fr_2rem] items-center gap-2 px-3 py-1.5">
                     <FreeTextCombobox
                       value={row.herb_name}
                       onValueChange={(v) => updateHerb(i, { herb_name: v })}
                       load={herbLoad}
-                      placeholder="输入药名或拼音"
+                      placeholder="输入药名或拼音首字母"
                     />
                     <Input type="number" value={row.dose}
                       onChange={(e) => updateHerb(i, { dose: e.target.value })}
@@ -604,9 +604,6 @@ export function CaseEntry() {
                     <Input value={row.unit}
                       onChange={(e) => updateHerb(i, { unit: e.target.value })}
                       className="tabular-nums" />
-                    <Input value={row.processing}
-                      onChange={(e) => updateHerb(i, { processing: e.target.value })}
-                      placeholder="如 醋炙" />
                     <Input value={row.decoction_note}
                       onChange={(e) => updateHerb(i, { decoction_note: e.target.value })}
                       placeholder="如 先煎" />

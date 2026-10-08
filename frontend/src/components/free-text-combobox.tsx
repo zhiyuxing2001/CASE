@@ -1,5 +1,6 @@
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
 import * as React from "react"
+import { createPortal } from "react-dom"
 
 import { cn } from "@/lib/utils"
 import { useDebouncedValue } from "@/hooks/use-debounce"
@@ -22,6 +23,8 @@ interface FreeTextComboboxProps {
 /**
  * 自由文本 + 联想：输入即检索，回车或点击可选中，也允许直接输入自由文本。
  * 用于药名、舌质、舌苔、脉象、证型、方剂等“字典建议但不强制”的场景。
+ *
+ * 下拉列表通过 portal 渲染到 body，避免被表格等 overflow-hidden 容器裁剪。
  */
 export function FreeTextCombobox({
   value,
@@ -35,8 +38,19 @@ export function FreeTextCombobox({
   const [loading, setLoading] = React.useState(false)
   const [highlight, setHighlight] = React.useState(0)
   const rootRef = React.useRef<HTMLDivElement>(null)
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const [rect, setRect] = React.useState<{ top: number; left: number; width: number } | null>(null)
 
   const debouncedValue = useDebouncedValue(value, 220)
+
+  function openDropdown() {
+    const el = inputRef.current
+    if (el) {
+      const r = el.getBoundingClientRect()
+      setRect({ top: r.bottom + 4, left: r.left, width: r.width })
+    }
+    setOpen(true)
+  }
 
   React.useEffect(() => {
     let cancelled = false
@@ -51,7 +65,7 @@ export function FreeTextCombobox({
         if (!cancelled) {
           setOptions(opts.slice(0, 8))
           setHighlight(0)
-          if (opts.length > 0) setOpen(true)
+          if (opts.length > 0) openDropdown()
         }
       })
       .catch(() => {
@@ -75,6 +89,24 @@ export function FreeTextCombobox({
     document.addEventListener("mousedown", onDown)
     return () => document.removeEventListener("mousedown", onDown)
   }, [])
+
+  // 滚动/缩放时重算位置，保证下拉跟随输入框
+  React.useEffect(() => {
+    if (!open) return
+    function reposition() {
+      const el = inputRef.current
+      if (el) {
+        const r = el.getBoundingClientRect()
+        setRect({ top: r.bottom + 4, left: r.left, width: r.width })
+      }
+    }
+    window.addEventListener("scroll", reposition, true)
+    window.addEventListener("resize", reposition)
+    return () => {
+      window.removeEventListener("scroll", reposition, true)
+      window.removeEventListener("resize", reposition)
+    }
+  }, [open])
 
   function select(option: ComboboxOption) {
     onValueChange(option.label, option)
@@ -103,15 +135,16 @@ export function FreeTextCombobox({
   return (
     <div ref={rootRef} className={cn("relative", className)}>
       <input
+        ref={inputRef}
         className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
         value={value}
         placeholder={placeholder}
         onChange={(e) => {
           onValueChange(e.target.value)
-          setOpen(true)
+          openDropdown()
         }}
         onFocus={() => {
-          if (options.length > 0) setOpen(true)
+          if (options.length > 0) openDropdown()
         }}
         onKeyDown={onKeyDown}
       />
@@ -123,31 +156,36 @@ export function FreeTextCombobox({
         )}
       </span>
 
-      {open && options.length > 0 && (
-        <ul className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
-          {options.map((option, i) => (
-            <li
-              key={option.value}
-              onMouseEnter={() => setHighlight(i)}
-              onClick={() => select(option)}
-              className={cn(
-                "flex cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none",
-                i === highlight && "bg-accent text-accent-foreground",
-              )}
-            >
-              <span>
-                {option.label}
-                {option.hint && (
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    {option.hint}
-                  </span>
+      {open && options.length > 0 && rect &&
+        createPortal(
+          <ul
+            style={{ position: "fixed", top: rect.top, left: rect.left, width: rect.width }}
+            className="z-[9999] max-h-64 overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+          >
+            {options.map((option, i) => (
+              <li
+                key={option.value}
+                onMouseEnter={() => setHighlight(i)}
+                onClick={() => select(option)}
+                className={cn(
+                  "flex cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none",
+                  i === highlight && "bg-accent text-accent-foreground",
                 )}
-              </span>
-              {option.label === value && <Check className="h-4 w-4" />}
-            </li>
-          ))}
-        </ul>
-      )}
+              >
+                <span>
+                  {option.label}
+                  {option.hint && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {option.hint}
+                    </span>
+                  )}
+                </span>
+                {option.label === value && <Check className="h-4 w-4" />}
+              </li>
+            ))}
+          </ul>,
+          document.body,
+        )}
     </div>
   )
 }
