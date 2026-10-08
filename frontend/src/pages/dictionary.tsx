@@ -28,6 +28,12 @@ import {
 } from "@/api/admin"
 import { fetchFormulas, fetchHerbs, fetchSyndromes } from "@/api/cases"
 import {
+  fetchPrompts,
+  resetPrompt,
+  updatePrompt,
+  type Prompt,
+} from "@/api/prompts"
+import {
   createTemplate,
   deleteTemplate,
   updateTemplate,
@@ -42,7 +48,7 @@ import {
 import type { FormulaOption, HerbOption, SyndromeOption, TermOption } from "@/api/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -50,7 +56,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 
-type TabKey = "herb" | "syndrome" | "term" | "formula" | "template"
+type TabKey = "herb" | "syndrome" | "term" | "formula" | "template" | "prompt"
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "herb", label: "药名" },
@@ -58,6 +64,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "term", label: "术语" },
   { key: "formula", label: "方剂" },
   { key: "template", label: "界面模板" },
+  { key: "prompt", label: "提示词" },
 ]
 
 const TERM_TYPE: Record<number, string> = { 1: "舌质", 2: "舌苔", 3: "脉象" }
@@ -91,6 +98,7 @@ export function Dictionary() {
   const terms = useQuery({ queryKey: ["dict-terms", q], queryFn: () => fetchAllTerms(q), enabled: tab === "term" })
   const formulas = useQuery({ queryKey: ["dict-formulas", q], queryFn: () => fetchFormulas(q), enabled: tab === "formula" })
   const templates = useQuery({ queryKey: ["dict-templates"], queryFn: fetchTemplates, enabled: tab === "template" })
+  const prompts = useQuery({ queryKey: ["prompts"], queryFn: fetchPrompts, enabled: tab === "prompt" })
 
   function invalidate() {
     void queryClient.invalidateQueries({ queryKey: ["dict-herbs"] })
@@ -98,6 +106,7 @@ export function Dictionary() {
     void queryClient.invalidateQueries({ queryKey: ["dict-terms"] })
     void queryClient.invalidateQueries({ queryKey: ["dict-formulas"] })
     void queryClient.invalidateQueries({ queryKey: ["dict-templates"] })
+    void queryClient.invalidateQueries({ queryKey: ["prompts"] })
   }
 
   return (
@@ -105,11 +114,13 @@ export function Dictionary() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold tracking-tight">字典维护</h2>
-          <p className="text-sm text-muted-foreground">维护药名、证型、术语、方剂与界面模板，影响录入联想与识别统计。</p>
+          <p className="text-sm text-muted-foreground">维护药名、证型、术语、方剂、界面模板与提示词，影响录入联想与识别统计。</p>
         </div>
-        <Button onClick={() => { setEditing(null); setDialogOpen(true) }}>
-          <Plus className="h-4 w-4" /> 添加
-        </Button>
+        {tab !== "prompt" && (
+          <Button onClick={() => { setEditing(null); setDialogOpen(true) }}>
+            <Plus className="h-4 w-4" /> 添加
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -119,7 +130,7 @@ export function Dictionary() {
             {t.label}
           </button>
         ))}
-        {tab !== "template" && (
+        {tab !== "template" && tab !== "prompt" && (
           <div className="ml-auto">
             <Input className="w-52" placeholder="搜索…" value={q}
               onChange={(e) => setQ(e.target.value)} />
@@ -127,8 +138,11 @@ export function Dictionary() {
         )}
       </div>
 
-      <Card>
-        <CardContent className="p-0">
+      {tab === "prompt" ? (
+        <PromptPanel prompts={prompts.data ?? []} onChanged={invalidate} />
+      ) : (
+        <Card>
+          <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -193,7 +207,8 @@ export function Dictionary() {
             </TableBody>
           </Table>
         </CardContent>
-      </Card>
+        </Card>
+      )}
 
       <DictDialog
         tab={tab}
@@ -536,5 +551,62 @@ function TemplateForm({ editingId, onSaved, onClose }: { editingId: string | nul
         <Button disabled={!form.name.trim() || save.isPending} onClick={() => save.mutate()}>保存</Button>
       </DialogFooter>
     </div>
+  )
+}
+
+function PromptPanel({ prompts, onChanged }: { prompts: Prompt[]; onChanged: () => void }) {
+  if (prompts.length === 0) {
+    return <p className="text-sm text-muted-foreground">加载中…</p>
+  }
+  return (
+    <div className="space-y-4">
+      {prompts.map((p) => (
+        <PromptCard key={p.key} prompt={p} onChanged={onChanged} />
+      ))}
+    </div>
+  )
+}
+
+function PromptCard({ prompt, onChanged }: { prompt: Prompt; onChanged: () => void }) {
+  const [value, setValue] = useState(prompt.current)
+  const dirty = value !== prompt.current
+
+  const save = useMutation({
+    mutationFn: () => updatePrompt(prompt.key, value),
+    onSuccess: () => { toast.success("已保存"); onChanged() },
+    onError: (e: Error) => toast.error(e.message),
+  })
+  const reset = useMutation({
+    mutationFn: () => resetPrompt(prompt.key),
+    onSuccess: () => { setValue(prompt.default); toast.success("已恢复默认"); onChanged() },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle className="text-base">{prompt.name}</CardTitle>
+          <CardDescription>{prompt.description}</CardDescription>
+        </div>
+        {prompt.is_modified && <Badge variant="warning">已修改</Badge>}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Textarea
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          rows={10}
+          className="font-mono text-sm leading-relaxed"
+        />
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={() => reset.mutate()} disabled={!prompt.is_modified || reset.isPending}>
+            恢复默认
+          </Button>
+          <Button size="sm" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
+            保存
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
