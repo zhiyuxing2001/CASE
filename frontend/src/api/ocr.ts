@@ -40,6 +40,7 @@ export interface OcrHerb {
 }
 
 export interface OcrLabResult {
+  test_name: string
   item_name: string
   result_value: string
   unit: string

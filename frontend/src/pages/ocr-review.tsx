@@ -411,12 +411,13 @@ export function OcrReview() {
               <div className="space-y-2">
                 <Label>检验结果</Label>
                 <div className="overflow-hidden rounded-lg border">
-                  <div className="grid grid-cols-[1fr_6rem_5rem_6.5rem_2rem] gap-2 border-b bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-                    <span>项目</span><span>结果</span><span>单位</span><span>参考范围</span><span />
+                  <div className="grid grid-cols-[6rem_1fr_5.5rem_4.5rem_6.5rem_2rem] gap-2 border-b bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                    <span>检验名称</span><span>项目</span><span>结果</span><span>单位</span><span>参考范围</span><span />
                   </div>
                   <div className="divide-y">
                     {structured.lab_results.map((l, i) => (
-                      <div key={i} className={cn("grid grid-cols-[1fr_6rem_5rem_6.5rem_2rem] items-center gap-2 px-3 py-1.5", l.needs_review && "bg-amber-500/5")}>
+                      <div key={i} className={cn("grid grid-cols-[6rem_1fr_5.5rem_4.5rem_6.5rem_2rem] items-center gap-2 px-3 py-1.5", l.needs_review && "bg-amber-500/5")}>
+                        <Input value={l.test_name} onChange={(e) => setLab(i, { test_name: e.target.value })} placeholder="如 血常规" />
                         <div className="flex items-center gap-1.5">
                           <Input value={l.item_name} onChange={(e) => setLab(i, { item_name: e.target.value })} />
                           {l.needs_review && <Badge variant="warning" className="shrink-0">待校对</Badge>}
@@ -434,7 +435,7 @@ export function OcrReview() {
                     )}
                   </div>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={() => setStructured((s) => ({ ...s, lab_results: [...s.lab_results, { item_name: "", result_value: "", unit: "", reference_range: "", abnormal_flag: 0, needs_review: false, confidence: 1 }] }))}>
+                <Button type="button" variant="outline" size="sm" onClick={() => setStructured((s) => ({ ...s, lab_results: [...s.lab_results, { test_name: "", item_name: "", result_value: "", unit: "", reference_range: "", abnormal_flag: 0, needs_review: false, confidence: 1 }] }))}>
                   <Plus className="h-4 w-4" /> 添加检验
                 </Button>
               </div>

@@ -35,6 +35,7 @@ interface HerbRow {
 }
 
 interface LabRow {
+  test_name: string
   item_name: string
   result_value: string
   unit: string
@@ -49,7 +50,7 @@ interface ExamRow {
 }
 
 const EMPTY_LAB: LabRow = {
-  item_name: "", result_value: "", unit: "",
+  test_name: "", item_name: "", result_value: "", unit: "",
   reference_range: "", abnormal_flag: "0",
 }
 const EMPTY_EXAM: ExamRow = { item_name: "", finding: "", conclusion: "" }
@@ -194,6 +195,7 @@ export function CaseEntry() {
     }))
     setHerbs(herbRows.length ? herbRows : [{ ...EMPTY_HERB }])
     setLabResults(editRecord.lab_results.map((l) => ({
+      test_name: l.test_name,
       item_name: l.item_name,
       result_value: l.result_value,
       unit: l.unit,
@@ -264,6 +266,7 @@ export function CaseEntry() {
         lab_results: labResults
           .filter((l) => l.item_name.trim())
           .map((l) => ({
+            test_name: l.test_name,
             item_name: l.item_name.trim(),
             result_value: l.result_value,
             unit: l.unit,
@@ -660,12 +663,13 @@ export function CaseEntry() {
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="overflow-hidden rounded-lg border">
-            <div className="grid grid-cols-[1fr_1fr_5.5rem_6.5rem_5.5rem_2rem] gap-2 border-b bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-              <span>项目</span><span>结果</span><span>单位</span><span>参考范围</span><span>异常</span><span />
+            <div className="grid grid-cols-[6.5rem_1fr_1fr_5rem_6.5rem_5rem_2rem] gap-2 border-b bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+              <span>检验名称</span><span>项目</span><span>结果</span><span>单位</span><span>参考范围</span><span>异常</span><span />
             </div>
             <div className="divide-y">
               {labResults.map((row, i) => (
-                <div key={i} className="grid grid-cols-[1fr_1fr_5.5rem_6.5rem_5.5rem_2rem] items-center gap-2 px-3 py-1.5">
+                <div key={i} className="grid grid-cols-[6.5rem_1fr_1fr_5rem_6.5rem_5rem_2rem] items-center gap-2 px-3 py-1.5">
+                  <Input value={row.test_name} onChange={(e) => updateLab(i, { test_name: e.target.value })} placeholder="如 血常规" />
                   <Input value={row.item_name} onChange={(e) => updateLab(i, { item_name: e.target.value })} placeholder="如 白细胞计数" />
                   <Input value={row.result_value} onChange={(e) => updateLab(i, { result_value: e.target.value })} placeholder="如 12.5" />
                   <Input value={row.unit} onChange={(e) => updateLab(i, { unit: e.target.value })} placeholder="如 10^9/L" />
@@ -690,7 +694,7 @@ export function CaseEntry() {
             </div>
           </div>
           <Button type="button" variant="outline" size="sm"
-            onClick={() => setLabResults((rows) => [...rows, { ...EMPTY_LAB }])}>
+            onClick={() => setLabResults((rows) => [...rows, { ...EMPTY_LAB, test_name: rows[rows.length - 1]?.test_name ?? "" }])}>
             <Plus className="h-4 w-4" /> 添加检验
           </Button>
         </CardContent>

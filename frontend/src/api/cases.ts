@@ -104,6 +104,7 @@ export interface HerbPayload {
 }
 
 export interface LabResultPayload {
+  test_name?: string
   item_name: string
   result_value?: string
   unit?: string

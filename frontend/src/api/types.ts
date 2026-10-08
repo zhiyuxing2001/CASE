@@ -124,6 +124,7 @@ export interface HerbItem {
 
 export interface LabResultItem {
   result_id: number
+  test_name: string
   item_name: string
   result_value: string
   unit: string

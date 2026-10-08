@@ -23,6 +23,7 @@ interface ReviewHerb {
   needs_review: boolean
 }
 interface ReviewLab {
+  test_name: string
   item_name: string
   result_value: string
   unit: string
@@ -65,7 +66,8 @@ export function CaseReview() {
       role: h.role, sequence: h.sequence, needs_review: h.needs_review,
     })))
     setLabs(data.lab_results.map((l) => ({
-      item_name: l.item_name, result_value: l.result_value, unit: l.unit,
+      test_name: l.test_name, item_name: l.item_name,
+      result_value: l.result_value, unit: l.unit,
       reference_range: l.reference_range, abnormal_flag: l.abnormal_flag,
       needs_review: l.needs_review,
     })))
@@ -185,7 +187,8 @@ export function CaseReview() {
                   const l = labs[i]
                   return (
                     <ReviewRow key={i} checked={!l.needs_review} onCheck={(v) => setLab(i, { needs_review: !v })}>
-                      <div className="grid grid-cols-[1fr_5rem_4rem_6rem_5.5rem] gap-2">
+                      <div className="grid grid-cols-[6rem_1fr_5rem_4rem_6rem_5rem] gap-2">
+                        <Input value={l.test_name} onChange={(e) => setLab(i, { test_name: e.target.value })} placeholder="检验名称" />
                         <Input value={l.item_name} onChange={(e) => setLab(i, { item_name: e.target.value })} />
                         <Input value={l.result_value} onChange={(e) => setLab(i, { result_value: e.target.value })} />
                         <Input value={l.unit} onChange={(e) => setLab(i, { unit: e.target.value })} />

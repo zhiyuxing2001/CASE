@@ -4,7 +4,7 @@ import { useParams, Link } from "react-router-dom"
 import { toast } from "sonner"
 
 import { downloadCaseReport, fetchRecord, fetchRecordHistory } from "@/api/cases"
-import type { AuditEntry } from "@/api/types"
+import type { AuditEntry, LabResultItem } from "@/api/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -352,35 +352,26 @@ export function CaseDetail() {
           {/* 检验 */}
           {data.lab_results.length > 0 && (
             <Section title="检验结果">
-              <div className="py-2">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-xs text-muted-foreground">
-                      <th className="py-1.5 pr-2 font-medium">项目</th>
-                      <th className="py-1.5 pr-2 font-medium">结果</th>
-                      <th className="py-1.5 pr-2 font-medium">单位</th>
-                      <th className="py-1.5 font-medium">参考范围</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.lab_results.map((l) => (
-                      <tr key={l.result_id} className="border-b last:border-0">
-                        <td className="py-1.5 pr-2 font-medium">
-                          {l.item_name}
-                          {l.needs_review && <Badge variant="warning" className="ml-1.5">待校对</Badge>}
-                        </td>
-                        <td className="py-1.5 pr-2 tabular-nums">
-                          {l.result_value}
-                          {ABNORMAL[l.abnormal_flag] && (
-                            <span className="ml-0.5 text-destructive">{ABNORMAL[l.abnormal_flag]}</span>
-                          )}
-                        </td>
-                        <td className="py-1.5 pr-2 text-muted-foreground">{l.unit}</td>
-                        <td className="py-1.5 text-muted-foreground">{l.reference_range}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="space-y-4 py-2">
+                {(() => {
+                  const hasTest = data.lab_results.some((l) => l.test_name)
+                  if (!hasTest) {
+                    return <LabTable labs={data.lab_results} />
+                  }
+                  const groups: { name: string; items: typeof data.lab_results }[] = []
+                  for (const l of data.lab_results) {
+                    const name = l.test_name || "未分组"
+                    const g = groups.find((x) => x.name === name)
+                    if (g) g.items.push(l)
+                    else groups.push({ name, items: [l] })
+                  }
+                  return groups.map((g) => (
+                    <div key={g.name}>
+                      <div className="mb-1 text-sm font-medium text-muted-foreground">{g.name}</div>
+                      <LabTable labs={g.items} />
+                    </div>
+                  ))
+                })()}
               </div>
             </Section>
           )}
@@ -448,5 +439,38 @@ function HistoryTable({ entries }: { entries: AuditEntry[] }) {
         </div>
       ))}
     </div>
+  )
+}
+
+function LabTable({ labs }: { labs: LabResultItem[] }) {
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="border-b text-left text-xs text-muted-foreground">
+          <th className="py-1.5 pr-2 font-medium">项目</th>
+          <th className="py-1.5 pr-2 font-medium">结果</th>
+          <th className="py-1.5 pr-2 font-medium">单位</th>
+          <th className="py-1.5 font-medium">参考范围</th>
+        </tr>
+      </thead>
+      <tbody>
+        {labs.map((l) => (
+          <tr key={l.result_id} className="border-b last:border-0">
+            <td className="py-1.5 pr-2 font-medium">
+              {l.item_name}
+              {l.needs_review && <Badge variant="warning" className="ml-1.5">待校对</Badge>}
+            </td>
+            <td className="py-1.5 pr-2 tabular-nums">
+              {l.result_value}
+              {ABNORMAL[l.abnormal_flag] && (
+                <span className="ml-0.5 text-destructive">{ABNORMAL[l.abnormal_flag]}</span>
+              )}
+            </td>
+            <td className="py-1.5 pr-2 text-muted-foreground">{l.unit}</td>
+            <td className="py-1.5 text-muted-foreground">{l.reference_range}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   )
 }
