@@ -673,18 +673,24 @@ TERMS: list[dict] = [
     {"term_type": 5, "term": "矾制", "description": "白矾为辅料制"},
     {"term_type": 5, "term": "切片", "description": "切制成片"},
 
-    # 煎服法 term_type=6
+    # 煎服法 term_type=6（常规煎煮与服用）
     {"term_type": 6, "term": "水煎服", "description": "常规煎服"},
-    {"term_type": 6, "term": "先煎", "description": "矿物、贝壳类先煎"},
-    {"term_type": 6, "term": "后下", "description": "芳香类后下"},
-    {"term_type": 6, "term": "包煎", "description": "细小或带绒药物包煎"},
-    {"term_type": 6, "term": "另煎", "description": "贵重药单独煎"},
-    {"term_type": 6, "term": "烊化", "description": "胶类药溶化服"},
-    {"term_type": 6, "term": "冲服", "description": "粉末或液体药冲服"},
+    {"term_type": 6, "term": "浓煎", "description": "药汁浓缩"},
+    {"term_type": 6, "term": "武火煎沸，文火慢煎", "description": "先武火后文火"},
     {"term_type": 6, "term": "温服", "description": "药液温时服"},
     {"term_type": 6, "term": "饭后服", "description": "饭后服用"},
     {"term_type": 6, "term": "饭前服", "description": "饭前服用"},
     {"term_type": 6, "term": "日一剂", "description": "每日一剂"},
     {"term_type": 6, "term": "分早晚温服", "description": "分两次温服"},
     {"term_type": 6, "term": "机械煎药", "description": "代煎服务"},
+
+    # 特殊煎煮法 term_type=11
+    {"term_type": 11, "term": "先煎", "description": "矿物、贝壳类先煎"},
+    {"term_type": 11, "term": "后下", "description": "芳香类后下"},
+    {"term_type": 11, "term": "包煎", "description": "细小或带绒药物包煎"},
+    {"term_type": 11, "term": "另煎", "description": "贵重药单独煎"},
+    {"term_type": 11, "term": "烊化", "description": "胶类药溶化服"},
+    {"term_type": 11, "term": "兑服", "description": "药液兑入服"},
+    {"term_type": 11, "term": "冲服", "description": "粉末或液体药冲服"},
+    {"term_type": 11, "term": "煎汤代水", "description": "用该药煎汤代水煎他药"},
 ]
