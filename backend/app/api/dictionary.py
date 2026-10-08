@@ -40,6 +40,7 @@ def list_herbs(
         schemas.HerbOption(
             herb_id=h.herb_id, herb_name=h.herb_name, pinyin=h.pinyin,
             category=h.category, is_processed=bool(h.is_processed),
+            is_auto=bool(h.is_auto),
         )
         for h in herbs
     ]
@@ -132,7 +133,7 @@ def list_syndromes(
     return [
         schemas.SyndromeOption(syndrome_id=s.syndrome_id,
                                syndrome_name=s.syndrome_name,
-                               category=s.category)
+                               category=s.category, is_auto=bool(s.is_auto))
         for s in rows
     ]
 
@@ -154,7 +155,8 @@ def list_terms(
     ).scalars().all()
     return [
         schemas.TermOption(term_id=t.term_id, term_type=t.term_type or 0,
-                           term=t.term, description=t.description)
+                           term=t.term, description=t.description,
+                           is_auto=bool(t.is_auto))
         for t in rows
     ]
 

@@ -122,6 +122,7 @@ class HerbOption(BaseModel):
     pinyin: str
     category: str
     is_processed: bool
+    is_auto: bool = False
 
 
 class HerbResolution(BaseModel):
@@ -146,6 +147,7 @@ class SyndromeOption(BaseModel):
     syndrome_id: str
     syndrome_name: str
     category: str
+    is_auto: bool = False
 
 
 class TermOption(BaseModel):
@@ -153,6 +155,7 @@ class TermOption(BaseModel):
     term_type: int
     term: str
     description: str
+    is_auto: bool = False
 
 
 class FormulaOption(BaseModel):

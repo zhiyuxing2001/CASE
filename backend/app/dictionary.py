@@ -23,12 +23,14 @@ never a gate.
 from __future__ import annotations
 
 import difflib
+import re
 from dataclasses import dataclass
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from ulid import ULID
 
-from .models import DictHerb, DictHerbAlias
+from .models import DictHerb, DictHerbAlias, DictSyndrome, DictTerm
 
 #: Aliases of this type are known OCR misreads; they resolve silently.
 OCR_MISREAD = 4
@@ -156,4 +158,76 @@ def suggest_herbs(session: Session, name: str,
 
 
 __all__ = ["HerbResolution", "OCR_MISREAD", "resolve_herb", "resolve_herbs",
-           "suggest_herbs"]
+           "suggest_herbs", "collect_dictionary"]
+
+
+# ---------------------------------------------------------------------------
+# 半自动字典收集
+# ---------------------------------------------------------------------------
+
+def _split(text: str) -> list[str]:
+    return [p.strip() for p in re.split(r"[、，；;,\s]+", text or "") if p.strip()]
+
+
+def collect_dictionary(session: Session, payload) -> int:
+    """从病案 payload 收集字典未收录的新药名/证型/术语（半自动）。
+
+    只登记归一失败的真·新词，已匹配的不动；自动条目以 is_auto=1 标记，
+    便于在字典维护页识别与整理。返回新增条数。
+    """
+    added = 0
+    added += _collect_herbs(session, [h.herb_name for h in payload.herbs])
+    added += _collect_syndromes(session, payload.diagnosis.syndrome)
+    added += _collect_terms(session, payload.narrative)
+    return added
+
+
+def _collect_herbs(session: Session, names: list[str]) -> int:
+    added = 0
+    seen: set[str] = set()
+    for raw in names:
+        name = (raw or "").strip()
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        if resolve_herb(session, name).matched_by != "none":
+            continue
+        session.add(DictHerb(
+            herb_id=str(ULID()), herb_name=name, is_auto=True,
+            is_common=False,  # 自动收集的新药先不作常用药
+        ))
+        added += 1
+    return added
+
+
+def _collect_syndromes(session: Session, syndrome_text: str) -> int:
+    added = 0
+    for part in _split(syndrome_text):
+        exists = session.scalar(
+            select(DictSyndrome.syndrome_id)
+            .where(DictSyndrome.syndrome_name == part)
+        )
+        if exists:
+            continue
+        session.add(DictSyndrome(
+            syndrome_id=str(ULID()), syndrome_name=part, is_auto=True))
+        added += 1
+    return added
+
+
+def _collect_terms(session: Session, narrative) -> int:
+    added = 0
+    for term_type, field in ((1, "body_of_tongue"), (2, "fur_of_tongue"),
+                             (3, "pulse")):
+        value = getattr(narrative, field, "") or ""
+        for part in _split(value):
+            exists = session.scalar(
+                select(DictTerm.term_id)
+                .where(DictTerm.term_type == term_type, DictTerm.term == part)
+            )
+            if exists:
+                continue
+            session.add(DictTerm(
+                term_type=term_type, term=part, is_auto=True))
+            added += 1
+    return added

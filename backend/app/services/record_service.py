@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from ulid import ULID
 
 from .. import schemas
-from ..dictionary import resolve_herb
+from ..dictionary import collect_dictionary, resolve_herb
 from ..models import (CaseNarrative, Diagnosis, ExamReport, InfoPatient,
                       InfoRecord, LabResult, PrescriptionItem, Treatment)
 
@@ -122,6 +122,8 @@ def create_record(db: Session, payload: schemas.RecordCreate) -> int:
             needs_review=exam.needs_review, confidence=exam.confidence,
         ))
 
+    collect_dictionary(db, payload)  # 半自动收集新药名/证型/术语
+
     db.commit()
     return record.record_id
 
@@ -170,6 +172,8 @@ def update_record(db: Session, record_id: int,
 
     _replace_clinical_items(db, record, payload.herbs,
                             payload.lab_results, payload.exams)
+
+    collect_dictionary(db, payload)  # 半自动收集新药名/证型/术语
 
     db.commit()
     return record_id

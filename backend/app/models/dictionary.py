@@ -48,6 +48,8 @@ class DictHerb(CreatedAtMixin, Base):
     is_common = Column(Boolean, nullable=False, default=True,
                        doc="是否常用药，影响录入联想排序")
     is_active = Column(Boolean, nullable=False, default=True, doc="是否启用")
+    is_auto = Column(Boolean, nullable=False, default=False,
+                     doc="是否自动收集（录入病案时自动登记的新药名）")
 
 
 class DictHerbAlias(CreatedAtMixin, Base):
@@ -83,6 +85,8 @@ class DictSyndrome(CreatedAtMixin, Base):
     common_formula = Column(Text, nullable=False, default="", doc="代表方")
     description = Column(Text, nullable=False, default="", doc="说明")
     is_active = Column(Boolean, nullable=False, default=True, doc="是否启用")
+    is_auto = Column(Boolean, nullable=False, default=False,
+                     doc="是否自动收集（录入病案时自动登记的新证型）")
 
 
 class DictFormula(CreatedAtMixin, Base):
@@ -125,6 +129,8 @@ class DictTerm(Base):
     usage_count = Column(Integer, nullable=False, default=0,
                          doc="使用频次，用于录入联想排序")
     is_active = Column(Boolean, nullable=False, default=True, doc="是否启用")
+    is_auto = Column(Boolean, nullable=False, default=False,
+                     doc="是否自动收集（录入病案时自动登记的新术语）")
 
 
 class DictTemplate(CreatedAtMixin, Base):

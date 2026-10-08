@@ -354,3 +354,32 @@ def test_prompt_maintenance(engine: Engine) -> None:
         assert after["current"] == after["default"]
     finally:
         _cleanup()
+
+
+def test_auto_collect_dictionary_on_create(engine: Engine) -> None:
+    """提交病案时自动收集字典未收录的新药名/证型/舌脉术语。"""
+    client = _make_client(engine)
+    try:
+        pid = client.post("/api/patients", json={
+            "patient_name": "收集患者", "gender": True, "birthday": "1970-01-01",
+        }).json()["patient_id"]
+        client.post("/api/records", json={
+            "patient_id": pid, "clinic_date": "2026-03-01",
+            "narrative": {"complaint": "胃痛", "body_of_tongue": "淡红",
+                          "fur_of_tongue": "薄白", "pulse": "弦细"},
+            "diagnosis": {"syndrome": "肝胃不和证"},
+            "herbs": [{"herb_name": "柴胡", "dose": 10, "sequence": 0}],
+        })
+
+        herbs = client.get("/api/dict/herbs").json()
+        assert any(h["herb_name"] == "柴胡" and h["is_auto"] for h in herbs)
+        syndromes = client.get("/api/dict/syndromes").json()
+        assert any(s["syndrome_name"] == "肝胃不和证" and s["is_auto"]
+                   for s in syndromes)
+        terms = client.get("/api/dict/terms").json()
+        assert any(t["term"] == "淡红" and t["term_type"] == 1 and t["is_auto"]
+                   for t in terms)
+        assert any(t["term"] == "弦细" and t["term_type"] == 3 and t["is_auto"]
+                   for t in terms)
+    finally:
+        _cleanup()
