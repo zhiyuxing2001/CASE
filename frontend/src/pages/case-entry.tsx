@@ -604,9 +604,12 @@ export function CaseEntry() {
                     <Input value={row.unit}
                       onChange={(e) => updateHerb(i, { unit: e.target.value })}
                       className="tabular-nums" />
-                    <Input value={row.decoction_note}
-                      onChange={(e) => updateHerb(i, { decoction_note: e.target.value })}
-                      placeholder="如 先煎" />
+                    <FreeTextCombobox
+                      value={row.decoction_note}
+                      onValueChange={(v) => updateHerb(i, { decoction_note: v })}
+                      load={termLoad(11)}
+                      placeholder="如 先煎"
+                    />
                     <Button variant="ghost" size="icon" className="h-8 w-8"
                       onClick={() => setHerbs((rows) => rows.filter((_, j) => j !== i))}>
                       <Trash2 className="h-4 w-4 text-muted-foreground" />
@@ -627,9 +630,12 @@ export function CaseEntry() {
                 onChange={(e) => setTreatment({ ...treatment, dose_count: e.target.value })} />
             </Field>
             <Field label="煎煮法">
-              <Input value={treatment.decoction}
-                onChange={(e) => setTreatment({ ...treatment, decoction: e.target.value })}
-                placeholder="如 水煎服" />
+              <FreeTextCombobox
+                value={treatment.decoction}
+                onValueChange={(v) => setTreatment({ ...treatment, decoction: v })}
+                load={termLoad(6)}
+                placeholder="如 水煎服"
+              />
             </Field>
             <Field label="用法">
               <Input value={treatment.usage}

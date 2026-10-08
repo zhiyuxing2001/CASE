@@ -67,7 +67,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "prompt", label: "提示词" },
 ]
 
-const TERM_TYPE: Record<number, string> = { 1: "舌质", 2: "舌苔", 3: "脉象" }
+const TERM_TYPE: Record<number, string> = { 1: "舌质", 2: "舌苔", 3: "脉象", 6: "煎服法", 11: "特殊煎煮法" }
 
 export function Dictionary() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -392,6 +392,8 @@ function TermForm({ editingId, onSaved, onClose }: { editingId: string | null; o
               <SelectItem value="1">舌质</SelectItem>
               <SelectItem value="2">舌苔</SelectItem>
               <SelectItem value="3">脉象</SelectItem>
+              <SelectItem value="6">煎服法</SelectItem>
+              <SelectItem value="11">特殊煎煮法</SelectItem>
             </SelectContent>
           </Select>
         </Field>
