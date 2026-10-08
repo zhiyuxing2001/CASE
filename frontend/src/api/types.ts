@@ -69,6 +69,7 @@ export interface SyndromeOption {
   syndrome_id: string
   syndrome_name: string
   category: string
+  is_auto?: boolean
 }
 
 export interface HerbOption {
@@ -77,6 +78,7 @@ export interface HerbOption {
   pinyin: string
   category: string
   is_processed: boolean
+  is_auto?: boolean
 }
 
 export interface HerbResolution {
@@ -98,6 +100,7 @@ export interface TermOption {
   term_type: number
   term: string
   description: string
+  is_auto?: boolean
 }
 
 export interface FormulaOption {

@@ -156,7 +156,7 @@ export function Dictionary() {
             <TableBody>
               {tab === "herb" && herbs.data?.map((h: HerbOption) => (
                 <TableRow key={h.herb_id}>
-                  <TableCell className="font-medium">{h.herb_name}</TableCell>
+                  <TableCell className="font-medium">{h.herb_name}{h.is_auto && <Badge variant="outline" className="ml-1.5">自动</Badge>}</TableCell>
                   <TableCell className="text-muted-foreground">{h.pinyin || "—"}</TableCell>
                   <TableCell>{h.category || "—"}</TableCell>
                   <TableCell>{h.is_processed ? <Badge variant="secondary">炮制</Badge> : "—"}</TableCell>
@@ -167,7 +167,7 @@ export function Dictionary() {
               ))}
               {tab === "syndrome" && syndromes.data?.map((s: SyndromeOption) => (
                 <TableRow key={s.syndrome_id}>
-                  <TableCell className="font-medium">{s.syndrome_name}</TableCell>
+                  <TableCell className="font-medium">{s.syndrome_name}{s.is_auto && <Badge variant="outline" className="ml-1.5">自动</Badge>}</TableCell>
                   <TableCell>{s.category || "—"}</TableCell>
                   <TableCell>
                     <RowActions onEdit={() => openEdit("syndrome", s.syndrome_id)} onDelete={() => delSyndrome(s.syndrome_id)} />
@@ -176,7 +176,7 @@ export function Dictionary() {
               ))}
               {tab === "term" && terms.data?.map((t: TermOption) => (
                 <TableRow key={t.term_id}>
-                  <TableCell className="font-medium">{t.term}</TableCell>
+                  <TableCell className="font-medium">{t.term}{t.is_auto && <Badge variant="outline" className="ml-1.5">自动</Badge>}</TableCell>
                   <TableCell>{TERM_TYPE[t.term_type] ?? t.term_type}</TableCell>
                   <TableCell className="text-muted-foreground">{t.description || "—"}</TableCell>
                   <TableCell>
